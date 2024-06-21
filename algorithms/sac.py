@@ -9,7 +9,7 @@ import torch.nn as nn
 import hydra
 import numpy as np
 import optuna
-
+ 
 from omegaconf import DictConfig
 from bbrl.utils.chrono import Chrono
 
@@ -35,6 +35,8 @@ from bbrl_algos.models.utils import save_best
 from bbrl.visu.plot_policies import plot_policy
 from bbrl.visu.plot_critics import plot_critic
 
+from bbrl import instantiate_class
+
 import matplotlib
 import time
 
@@ -53,25 +55,26 @@ class SAC:
         assert (
             train_env_agent.is_continuous_action()
         ), "SAC code dedicated to continuous actions"
-        actor = globals()[self.cfg.algorithm.actor_type](
-            obs_size, self.cfg.algorithm.architecture.actor_hidden_size, act_size, name="policy"
-        )
+        
+        policy_agent_cfg = self.cfg.policy_agent
+        policy_agent_cfg.input_dimension = obs_size
+        policy_agent_cfg.output_dimension = act_size
+
+        critic_agent_cfg = self.cfg.critic_agent
+        critic_agent_cfg.obs_dimension = obs_size
+        critic_agent_cfg.action_dimension = act_size
+        
+        actor = instantiate_class(policy_agent_cfg)
+
         tr_agent = Agents(train_env_agent, actor)
         ev_agent = Agents(eval_env_agent, actor)
-        critic_1 = ContinuousQAgent(
-            obs_size,
-            self.cfg.algorithm.architecture.critic_hidden_size,
-            act_size,
-            name="critic-1",
-        )
+
+        critic_1 = instantiate_class(critic_agent_cfg)
         target_critic_1 = copy.deepcopy(critic_1).set_name("target-critic-1")
-        critic_2 = ContinuousQAgent(
-            obs_size,
-            self.cfg.algorithm.architecture.critic_hidden_size,
-            act_size,
-            name="critic-2",
-        )
+
+        critic_2 = instantiate_class(critic_agent_cfg)
         target_critic_2 = copy.deepcopy(critic_2).set_name("target-critic-2")
+
         train_agent = TemporalAgent(tr_agent)
         eval_agent = TemporalAgent(ev_agent)
         return (
@@ -207,7 +210,7 @@ class SAC:
         return actor_loss.mean()
 
 
-    def run_sac(self, logger, seed, info={}, trial=None):
+    def run_sac(self, train_env_agent, eval_env_agent, logger, seed, info={}, trial=None):
         torch.random.manual_seed(seed=seed)
         best_reward = float("-inf")
         n_epochs = 0
@@ -215,10 +218,8 @@ class SAC:
         # init_entropy_coef is the initial value of the entropy coef alpha.
         ent_coef = self.cfg.algorithm.init_entropy_coef
         tau = self.cfg.algorithm.tau_target
-        # 2) Create the environment agent
-        train_env_agent, eval_env_agent = get_env_agents(self.cfg)
 
-        # 3) Create the SAC Agent
+        # Create the SAC Agent
         (
             train_agent,
             eval_agent,
@@ -367,7 +368,8 @@ class SAC:
             info["replay_buffer"] = rb
             r = {"n_epochs": n_epochs, "training_time": time.time() - _training_start_time}
 
-        return best_reward
+        # Arbitrarily returns the critic_1
+        return r, actor, critic_1, info
 
 
     def load_best(self, best_filename):

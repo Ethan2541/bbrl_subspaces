@@ -20,7 +20,7 @@ class Subspace(Framework):
     """
     def __init__(self,seed,params):
         super().__init__(seed,params)
-        self.train_algorithm = instantiate_class(self.cfg.algorithm)
+        self.train_algorithm = instantiate_class(self.cfg.train_algorithm)
         self.alpha_search = instantiate_class(self.cfg.alpha_search)
         self.policy_agent = None
         self.critic_agent = None
@@ -32,7 +32,8 @@ class Subspace(Framework):
             self.policy_agent.add_anchor(logger = logger)
             self.critic_agent.add_anchor(n_anchors = self.policy_agent[0].n_anchors,logger = logger)
 
-        r1, self.policy_agent, self.critic_agent, info = self.train_algorithm.run(logger, self.seed, info=info)
+        train_env_agent, eval_env_agent = task.make()
+        r1, self.policy_agent, self.critic_agent, info = self.train_algorithm.run(train_env_agent, eval_env_agent, logger, self.seed, info=info)
         r2, self.policy_agent, self.critic_agent, info = self.alpha_search.run(self.policy_agent, self.critic_agent, task, logger, self.seed, info=info)
         return r1
 
@@ -42,7 +43,7 @@ class Subspace(Framework):
 
     def get_evaluation_agent(self,task_id):
         self.policy_agent.set_task(task_id)
-        return copy.deepcopy(self.policy_agent),self.critic_agent
+        return copy.deepcopy(self.policy_agent), self.critic_agent
 
     def evaluate(self,test_tasks,logger):
         """ Evaluate a model over a set of test tasks
@@ -65,25 +66,25 @@ class Subspace(Framework):
 
     def _evaluate_single_task(self,task,logger):
         device = self.cfg.evaluation.device
-        env_agent = task.make()
-        policy_agent, _ =self.get_evaluation_agent(task.task_id())
+        _, env_agent = task.make()
+        policy_agent, _ = self.get_evaluation_agent(task.task_id())
         policy_agent.eval()
         acquisition_agent = TemporalAgent(Agents(env_agent, policy_agent)).to(device)
-        acquisition_agent.seed(self.seed*13+self._stage*100)
+        acquisition_agent.seed(self.seed*13)
 
         #Evaluating best alpha
         rewards = []
         w = Workspace()
         for i in range(self.cfg.evaluation.n_rollouts):
             with torch.no_grad():
-                acquisition_agent(w, t = 0, stop_variable = "env/done")
+                acquisition_agent(w, t=0, stop_variable="env/done")
             ep_lengths= w["env/done"].max(0)[1]+1
             B = ep_lengths.size()[0]
             arange = torch.arange(B).to(device)
             cr = w["env/cumulated_reward"][ep_lengths-1,arange]
             rewards.append(cr)
         rewards = torch.stack(rewards, dim = 0).mean()
-        metrics={ "avg_reward" : rewards.item()}
+        metrics={"avg_reward" : rewards.item()}
         del w
 
         #Evaluating oracle

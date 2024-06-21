@@ -1,17 +1,21 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 #
-
+import os
 import typing as tp
 
 import bbrl
 import torch
 import torch.utils.data
-from bbrl import instantiate_class
+from bbrl import get_class, instantiate_class
 from bbrl.agents.agent import Agent
+from bbrl.agents.gymnasium import make_env, GymAgent, ParallelGymAgent
 from bbrl.workspace import Workspace
 from bbrl.agents import Agents, TemporalAgent
 
+from functools import partial
+
+assets_path = os.getcwd() + "../../assets/"
 
 class Task:
     """A Reinforcement Learning task defined as a BBRL agent. Use make() method
@@ -53,10 +57,72 @@ class Task:
     def env_cfg(self) -> dict:
         return self._env_agent_cfg
 
-    def make(self) -> bbrl.agents.agent.Agent:
-        agent = instantiate_class(self._env_agent_cfg)
-        agent.set_name("env")
-        return agent
+    def make(self) -> tp.Tuple[GymAgent, GymAgent]:
+        # Returns a pair of environments (train / evaluation) based on a configuration `cfg`
+
+        cfg = self.env_cfg()
+        autoreset=True
+        include_last_state=True
+
+        train_env_agent, eval_env_agent = None, None
+    
+        if "xml_file" in cfg.gym_env.keys():
+            xml_file = assets_path + cfg.gym_env.xml_file
+            print("loading:", xml_file)
+        else:
+            xml_file = None
+
+        if "wrappers" in cfg.gym_env.keys():
+            print("using wrappers:", cfg.gym_env.wrappers)
+            # wrappers_name_list = cfg.gym_env.wrappers.split(',')
+            wrappers_list = []
+            wr = get_class(cfg.gym_env.wrappers)
+            # for i in range(len(wrappers_name_list)):
+            wrappers_list.append(wr)
+            wrappers = wrappers_list
+            print(wrappers)
+        else:
+            wrappers = []
+
+        # Train environment
+        if xml_file is None:
+            if self.is_training_task:
+                train_env_agent = ParallelGymAgent(
+                    partial(
+                        make_env, cfg.env_name, autoreset=autoreset, wrappers=wrappers
+                    ),
+                    cfg.n_envs,
+                    include_last_state=include_last_state,
+                    seed=cfg.seed.train,
+                )
+
+            # Test environment (implictly, autoreset=False, which is always the case for evaluation environments)
+            eval_env_agent = ParallelGymAgent(
+                partial(make_env, cfg.env_name, wrappers=wrappers),
+                cfg.nb_evals,
+                include_last_state=include_last_state,
+                seed=cfg.seed.eval,
+            )
+        else:
+            if self.is_training_task:
+                train_env_agent = ParallelGymAgent(
+                    partial(
+                        make_env, cfg.gym_env.env_name, autoreset=autoreset, wrappers=wrappers
+                    ),
+                    cfg.n_envs,
+                    include_last_state=include_last_state,
+                    seed=cfg.seed.train,
+                )
+
+            # Test environment (implictly, autoreset=False, which is always the case for evaluation environments)
+            eval_env_agent = ParallelGymAgent(
+                partial(make_env, cfg.env_name, wrappers=wrappers),
+                cfg.nb_evals,
+                include_last_state=include_last_state,
+                seed=cfg.seed.eval,
+            )
+
+        return train_env_agent, eval_env_agent
     
 
 class Scenario:

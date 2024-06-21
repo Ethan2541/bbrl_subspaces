@@ -1,8 +1,0 @@
-name: normal
-classname: bbrl_cl.scenarios.GymScenario
-domain: "HalfCheetah-v4"
-tasks: ["normal"]
-repeat_scenario: 1
-n_train_envs: 5
-n_evaluation_envs: 10
-n_steps: 1_000_000

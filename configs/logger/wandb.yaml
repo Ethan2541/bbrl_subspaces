@@ -1,8 +1,0 @@
-classname: bbrl.utils.logger.WandbLogger
-project: ${scenario.domain}_${scenario.name}
-group: ${now:%Y-%m-%d_}
-job_type: ${name}
-tags: ${scenario.domain}_${scenario.name}_${name}
-every_n_seconds: 30
-verbose: False
-log_loss: False
