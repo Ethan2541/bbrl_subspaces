@@ -1,4 +1,6 @@
 __pycache__
 
+src/bbrl_cl/run
+
 src/bbrl_cl/_version.py
 src/bbrl_cl.egg-info

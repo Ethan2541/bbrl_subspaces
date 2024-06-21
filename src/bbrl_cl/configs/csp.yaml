@@ -1,5 +1,7 @@
+name: csp
+
 scenario:
-      name: normal
+      name: "normal"
       classname: bbrl_cl.scenarios.GymScenario
       domain: "HalfCheetah"
       tasks: ["HalfCheetah-v4"]
@@ -18,11 +20,10 @@ logger:
 
 hydra:
       run:
-      dir: run/${scenario.domain}_${scenario.name}/${name}/${now:%Y-%m-%d_%H-%M-%S}
+            dir: run/${scenario.domain}_${scenario.name}/${name}/${now:%Y-%m-%d_%H-%M-%S}
 
 framework:
       classname: bbrl_cl.frameworks.Subspace
-      save_best: True
       lr_scaling:  0. #scaling of the lr * nb_anchors
 
       evaluation:
@@ -32,6 +33,7 @@ framework:
 
       train_algorithm:
             classname: bbrl_cl.algorithms.sac.SAC
+            save_best: True
             algorithm:
                   seed:
                         q: 123
