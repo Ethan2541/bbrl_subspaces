@@ -65,43 +65,41 @@ class Subspace(Framework):
         return evaluation
 
     def _evaluate_single_task(self,task,logger):
-        device = self.cfg.evaluation.device
         _, env_agent = task.make()
-        policy_agent, _ = self.get_evaluation_agent(task.task_id())
-        policy_agent.eval()
-        acquisition_agent = TemporalAgent(Agents(env_agent, policy_agent)).to(device)
-        acquisition_agent.seed(self.seed*13)
+        actor, _ = self.get_evaluation_agent(task.task_id())
+        ev_agent = Agents(env_agent, actor)
+        eval_agent = TemporalAgent(ev_agent)
 
-        #Evaluating best alpha
+        # Evaluating best alpha
         rewards = []
         w = Workspace()
         for i in range(self.cfg.evaluation.n_rollouts):
             with torch.no_grad():
-                acquisition_agent(w, t=0, stop_variable="env/done")
+                eval_agent(w, t=0, stop_variable="env/done") # stochastic=False?
             ep_lengths= w["env/done"].max(0)[1]+1
             B = ep_lengths.size()[0]
-            arange = torch.arange(B).to(device)
+            arange = torch.arange(B)
             cr = w["env/cumulated_reward"][ep_lengths-1,arange]
             rewards.append(cr)
         rewards = torch.stack(rewards, dim = 0).mean()
         metrics={"avg_reward" : rewards.item()}
         del w
 
-        #Evaluating oracle
+        # Evaluating oracle
         if self.cfg.evaluation.oracle_rollouts>0:
             rewards = []
             w = Workspace()
-            n_anchors = policy_agent[0].n_anchors
-            alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([B])).to(device)
+            n_anchors = actor[0].n_anchors
+            alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([B]))
             for i in range(self.cfg.evaluation.oracle_rollouts):
                 with torch.no_grad():
-                    acquisition_agent(w, t = 0, alphas = alphas, stop_variable = "env/done")
+                    eval_agent(w, t=0, alphas=alphas, stop_variable="env/done")
                 ep_lengths= w["env/done"].max(0)[1]+1
                 B = ep_lengths.size()[0]
-                arange = torch.arange(B).to(device)
+                arange = torch.arange(B)
                 cr = w["env/cumulated_reward"][ep_lengths-1,arange]
                 rewards.append(cr)
-            rewards = torch.stack(rewards, dim = 0).mean(0).max()
+            rewards = torch.stack(rewards, dim=0).mean(0).max()
             metrics["oracle_reward"] = rewards.item()
             del w
         return metrics

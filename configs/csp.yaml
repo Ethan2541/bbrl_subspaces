@@ -26,10 +26,8 @@ framework:
       lr_scaling:  0. #scaling of the lr * nb_anchors
 
       evaluation:
-            device: cuda:0
-            seed: 1
             n_rollouts: 1
-            oracle_rollouts: 1
+            oracle_rollouts: 0
             evaluate_success: False
 
       train_algorithm:
