@@ -1,0 +1,2 @@
+run:
+  dir: run/${scenario.domain}_${scenario.name}/${name}/${now:%Y-%m-%d_%H-%M-%S}

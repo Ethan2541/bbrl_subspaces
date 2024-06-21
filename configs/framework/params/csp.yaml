@@ -1,0 +1,64 @@
+classname: bbrl_cl.frameworks.Subspace
+checkpoint: False
+
+evaluation:
+  device: cuda:0
+  n_evaluation_envs: ${scenario.n_evaluation_envs}
+  seed: 1
+  n_rollouts: 1
+  evaluate_success: False
+
+lr_scaling:  0. #scaling of the lr * nb_anchors
+
+algorithm:
+  classname: bbrl_cl.algorithms.SAC
+  params:
+    actor_optimizer:
+      classname: torch.optim.Adam
+      lr: 1e-3
+
+    critic_optimizer:
+      classname: torch.optim.Adam
+      lr: 3e-4
+
+    entropy_coef_optimizer:
+      classname: torch.optim.Adam
+      lr: 3e-4
+
+    reward_scaling: 1.
+    batch_size: 256
+    buffer_size: 1_280_000
+    tau_target: 0.005
+
+alpha_search:
+  classname: bbrl_cl.algorithms.AlphaSearch
+  params:
+    device: cuda:0
+    n_estimations: 1024
+    steps: 4096
+    n_processes: 0
+    improvement_threshold: 0.1
+    time_size: ${framework.params.algorithm.params.buffer_time_size}
+
+    n_rollouts: 32
+    n_validation_steps: 200
+
+policy_agent:
+  classname: bbrl_cl.agents.SubspaceActionAgent
+  hidden_size: 256
+  input_dimension: nil
+  output_dimension: nil
+  start_steps: 0
+
+  n_initial_anchors: 1
+  dist_type: flat
+  refresh_rate: 1.
+  resampling_policy: False
+  repeat_alpha: 100
+
+critic_agent:
+  classname: bbrl_cl.agents.AlphaTwinCritics
+  hidden_size: 256
+  obs_dimension: nil
+  action_dimension: nil
+  n_anchors:
