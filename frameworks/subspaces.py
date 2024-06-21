@@ -14,12 +14,6 @@ from torch.distributions.dirichlet import Dirichlet
 from bbrl_cl.core import Framework
 
 
-def get_checkpoint(path, keyword="policy_"):
-    files = [x for x in os.listdir(path) if keyword in x]
-    file = max(files, key = lambda x: int(x[re.search("_",x).end():re.search("\.",x).start()]))
-    stage = int(file[re.search("_",file).end():re.search("\.",file).start()]) + 1
-    return path+"/"+file, stage
-
 class Subspace(Framework):
     """
     Model for the subspace method.
@@ -30,58 +24,16 @@ class Subspace(Framework):
         self.alpha_search = instantiate_class(self.cfg.alpha_search)
         self.policy_agent = None
         self.critic_agent = None
-        self.lr_policy = self.cfg.algorithm.params.optimizer_policy.lr
-        if "path" in self.cfg:
-            print("Found a checkpoint. Loading last policy checkpointed...")
-            policy_path, stage = get_checkpoint(self.cfg.path, keyword = "policy_")
-            self._stage = stage
-            print("self._stage="+str(self._stage))
-            self.policy_agent = torch.load(policy_path)
-            print("Policy loaded successfully ! Resuming on stage "+str(self._stage))
-
-    def _create_policy_agent(self,task,logger):
-        logger.message("Creating policy Agent")
-        assert self.policy_agent is None
-        input_dimension = task.input_dimension()
-        output_dimension = task.output_dimension()
-        policy_agent_cfg = self.cfg.policy_agent
-        policy_agent_cfg.input_dimension = input_dimension
-        policy_agent_cfg.output_dimension = output_dimension
-        self.policy_agent = instantiate_class(policy_agent_cfg)
-
-    def _create_critic_agent(self,task,logger):
-        logger.message("Creating Critic Agent")
-        obs_dimension = task.input_dimension()
-        action_dimension = task.output_dimension()
-        critic_agent_cfg = self.cfg.critic_agent
-        critic_agent_cfg.obs_dimension = obs_dimension
-        critic_agent_cfg.action_dimension = action_dimension
-        critic_agent_cfg.n_anchors = self.policy_agent[0].n_anchors
-        self.critic_agent = instantiate_class(critic_agent_cfg)
 
     def _train(self,task,logger):
         task_id = task.task_id()
-        if self.policy_agent is None:
-            self._create_policy_agent(task,logger)
-        if self.critic_agent is None:
-            self._create_critic_agent(task,logger)
-        env_agent = task.make()
-        self.train_algorithm.cfg.optimizer_policy.lr = self.lr_policy * (1 + task_id * self.cfg.lr_scaling)
-        logger.message("Setting policy_lr to "+str(self.train_algorithm.cfg.optimizer_policy.lr))
-        info = {"task_id":task_id}
+        info = {"task_id": task_id}
         if task_id > 0:
             self.policy_agent.add_anchor(logger = logger)
             self.critic_agent.add_anchor(n_anchors = self.policy_agent[0].n_anchors,logger = logger)
-        burning_interactions = self.cfg.alpha_search.params.n_rollouts * self.cfg.alpha_search.params.n_validation_steps
-        r1, self.policy_agent, self.critic_agent, info = self.train_algorithm.run(self.policy_agent, self.critic_agent, env_agent,logger, self.seed, n_max_interactions = task.n_interactions() - burning_interactions, info = info)
-        r2, self.policy_agent, self.critic_agent, info = self.alpha_search.run(self.policy_agent, self.critic_agent, task, logger, self.seed, info = info)
 
-        if self.cfg.checkpoint:
-            torch.save(self.critic_agent,os.getcwd()+"/critic_"+str(task_id)+".dat")
-            torch.save(self.policy_agent,os.getcwd()+"/policy_"+str(task_id)+".dat")
-            del info["replay_buffer"]
-            torch.save(info,os.getcwd()+"/info_"+str(task_id)+".dat")
-            del info
+        r1, self.policy_agent, self.critic_agent, info = self.train_algorithm.run(logger, self.seed, info=info)
+        r2, self.policy_agent, self.critic_agent, info = self.alpha_search.run(self.policy_agent, self.critic_agent, task, logger, self.seed, info=info)
         return r1
 
     def memory_size(self):

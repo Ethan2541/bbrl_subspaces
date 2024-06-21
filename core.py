@@ -4,7 +4,7 @@
 
 import typing as tp
 
-import salina
+import bbrl
 import torch
 import torch.utils.data
 from bbrl import instantiate_class
@@ -14,25 +14,22 @@ from bbrl.agents import Agents, TemporalAgent
 
 
 class Task:
-    """A Reinforcement Learning task defined as a SaLinA agent. Use make() method
-    to instantiate the salina agent corresponding to the task. 
+    """A Reinforcement Learning task defined as a BBRL agent. Use make() method
+    to instantiate the bbrl agent corresponding to the task. 
 
     Parameters
     ----------
-    env_agent_cfg   : The OmegaConf (or dict) that allows to configure the SaLinA agent
+    env_agent_cfg   : The OmegaConf (or dict) that allows to configure the BBRL agent
     task_id         : An identifier of the task
-    n_interactions  : Defaults to None. Number of env interactions allowed for training
     input_dimension : The input dimension of the observations
     output_dimension: The output dimension of the actions (i.e size of the output tensor, or number of actions if discrete actions)
     """
     def __init__(self,env_agent_cfg: dict,
                       task_id: int,
-                      n_interactions: tp.Union[None,int] = None,
                       input_dimension: tp.Union[None,int] = None,
                       output_dimension: tp.Union[None,int] = None,
                       )  -> None:
         self._task_id = task_id
-        self._n_interactions = n_interactions
         self._env_agent_cfg = env_agent_cfg
 
         if input_dimension is None or output_dimension is None:
@@ -56,13 +53,11 @@ class Task:
     def env_cfg(self) -> dict:
         return self._env_agent_cfg
 
-    def make(self) -> salina.Agent:
+    def make(self) -> bbrl.agents.agent.Agent:
         agent = instantiate_class(self._env_agent_cfg)
         agent.set_name("env")
         return agent
-
-    def n_interactions(self) -> int:
-        return self._n_interactions
+    
 
 class Scenario:
     """ 
@@ -106,7 +101,7 @@ class Framework:
         Parameters
         ----------
         task: The task to train on
-        logger: a salina logger to log metrics and messages
+        logger: a bbrl logger to log metrics and messages
         """
         logger.message("-- Train stage "+str(self._stage))
         output=self._train(task,logger.get_logger("stage_"+str(self._stage)+"/"))
@@ -119,7 +114,7 @@ class Framework:
         Parameters
         ----------
         test_tasks: The set of tasks to evaluate on
-        logger: a salina logger
+        logger: a bbrl logger
 
         Returns
         ----------
@@ -139,7 +134,7 @@ class Framework:
     def _train(self,task: Task,logger: tp.Any) -> None:
         raise NotImplementedError
 
-    def get_evaluation_agent(self,task_id: int) -> salina.Agent:
+    def get_evaluation_agent(self,task_id: int) -> bbrl.agents.agent.Agent:
         raise NotImplementedError
 
     def _evaluate_single_task(self,task: Task) -> dict:
@@ -178,7 +173,7 @@ class Framework:
 
 
 class CRLAgent(Agent):
-    """A salina Agent that is able to apply set_task() and add_regularizer() methods
+    """A bbrl Agent that is able to apply set_task() and add_regularizer() methods
     """
     def set_task(self,task_id: tp.Union[None,int] = None) -> None:
         pass

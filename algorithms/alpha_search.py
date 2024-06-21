@@ -9,7 +9,7 @@ from bbrl.agents import Agents, TemporalAgent
 from ternary.helpers import simplex_iterator
 from torch.distributions.dirichlet import Dirichlet
 
-from salina_cl.agents.tools import LinearSubspace
+from bbrl_cl.agents.tools import LinearSubspace
 
 
 def remove_anchor(model):
@@ -105,7 +105,6 @@ class AlphaSearch:
             with torch.no_grad():
                 acquisition_agent(w, t = 0, n_steps= n_steps, alphas = alphas)
             logger.message("Acquisition ended")
-            n_interactions = n_steps * B
             cumulative_rewards, cumulative_rewards_before_training =  w["env/cumulated_reward"][-1].chunk(2)
             best_reward = cumulative_rewards.max()
             best_reward_before_training = cumulative_rewards_before_training.max()
@@ -138,11 +137,11 @@ class AlphaSearch:
                 action_agent.set_best_alpha(alpha = best_alpha, logger=logger)
                 info["best_alpha"] = best_alpha
 
-            r = {"n_epochs":0,"training_time":time.time()-_training_start_time,"n_interactions":n_interactions}
+            r = {"n_epochs": 0, "training_time": time.time() -_training_start_time}
             del w
         else:
             best_alpha = None
-            r = {"n_epochs":0,"training_time":0,"n_interactions":0}
+            r = {"n_epochs":0,"training_time":0}
             action_agent.set_best_alpha(alpha = best_alpha, logger=logger)
             info["best_alpha"] = best_alpha
         return r, action_agent, critic_agent, info

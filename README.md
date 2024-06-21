@@ -7,6 +7,6 @@ It aims to re-implement the work from Jean-Baptiste GAYA on Policy Subspaces.
 
 ## TODO
 
-- Adapt the SAC algorithm from `bbrl_algos`: encapsulation, arguments, return values (number of interactions, number of epochs, replay buffer)
-- Adapt the AlphaSearch class to leverage two critics instead of a single one
+- Adapt the SAC algorithm from `bbrl_algos`: return values
+- Adapt the AlphaSearch class to leverage two critics instead of a single one?
 - Edit the SAC configuration file to match the hyperparameters used in `bbrl`
