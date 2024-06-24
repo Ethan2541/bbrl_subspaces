@@ -76,10 +76,10 @@ class SAC:
         tr_agent = Agents(train_env_agent, actor)
         ev_agent = Agents(eval_env_agent, actor)
 
-        critic_1 = instantiate_class(critic_agent_cfg)
+        critic_1 = instantiate_class(critic_agent_cfg).set_name("critic-1")
         target_critic_1 = copy.deepcopy(critic_1).set_name("target-critic-1")
 
-        critic_2 = instantiate_class(critic_agent_cfg)
+        critic_2 = instantiate_class(critic_agent_cfg).set_name("critic-2")
         target_critic_2 = copy.deepcopy(critic_2).set_name("target-critic-2")
 
         train_agent = TemporalAgent(tr_agent)
@@ -166,7 +166,7 @@ class SAC:
             # Q(s+1,a+1) from the (s+1,a+1) where a+1 has been replaced in the RB
             target_q_agents(rb_workspace, t=1, n_steps=1)
 
-            action_logprobs_next = rb_workspace["policy/action_logprobs"]
+            action_logprobs_next = rb_workspace["action_logprobs"]
 
         q_values_rb_1, q_values_rb_2, post_q_values_1, post_q_values_2 = rb_workspace[
             "critic-1/q_values",
@@ -286,6 +286,7 @@ class SAC:
             if nb_steps > self.cfg.algorithm.learning_starts:
                 # Get a sample from the workspace
                 rb_workspace = rb.get_shuffled(self.cfg.algorithm.batch_size)
+                print(rb_workspace.variables)
 
                 terminated, reward = rb_workspace["env/terminated", "env/reward"]
                 if entropy_coef_optimizer is not None:

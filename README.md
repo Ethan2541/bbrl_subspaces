@@ -24,7 +24,7 @@ pip install -e .
 
 You simply need to go to src/bbrl_cl and execute:
 ```console
-python run.py
+python run.py -cn=csp
 ```
 
-If you want to change the scenario and tasks, you can edit the configuration files in `src/bbrl_cl/configs`, and the configuration name in `src/bbrl_cl/run.py`.
+If you want to add a custom scenario / tasks, you can edit the configuration files in `src/bbrl_cl/configs`. You can also change the value of the command line argument `-cn`, which refers to the configuration filename, for further testing.

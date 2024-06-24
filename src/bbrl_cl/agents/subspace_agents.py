@@ -204,7 +204,7 @@ class SubspaceAction(SubspaceAgent):
             std = log_std.exp()
             action = mu + torch.randn(*mu.shape).to(mu.device) * std
             log_prob = (-0.5 * (((action - mu) / (std + 1e-8)) ** 2 + 2 * log_std + np.log(2 * np.pi))).sum(-1, keepdim=True)
-            log_prob -= (2 * np.log(2) - action - F.softplus( - 2 * action)).sum(-1, keepdim=True)
+            log_prob -= (2*np.log(2) - action - F.softplus(-2*action)).sum(-1, keepdim=True)
             action = torch.tanh(action)
             self.set("action", action)
             self.set("action_logprobs", log_prob)
@@ -257,7 +257,7 @@ class SubspaceAction(SubspaceAgent):
         return cosine_similarities
 
 class AlphaCritic(SubspaceAgent):
-    def __init__(self, n_anchors, obs_dimension, action_dimension, hs, input_name = "env/env_obs", output_name = "q"):
+    def __init__(self, n_anchors, obs_dimension, action_dimension, hs, input_name="env/env_obs", output_name="q"):
         super().__init__()
         self.iname = input_name
         self.n_anchors = n_anchors
@@ -291,7 +291,8 @@ class AlphaCritic(SubspaceAgent):
             alphas = torch.cat([alphas,torch.zeros(*alphas.shape[:-1],self.n_anchors - alphas.shape[-1]).to(alphas.device)], dim = -1)
         input = torch.cat([input, action, alphas], dim=-1)
         critic = self.model(input).squeeze(-1)
-        self.set(self.output_name, critic)
+        print(f"{self.name}/{self.output_name}")
+        self.set(f"{self.name}/{self.output_name}", critic)
 
     def add_anchor(self, n_anchors = None, logger = None,**kwargs)-> None:
         self.__init__(self.n_anchors if n_anchors is None else n_anchors, self.obs_dimension, self.action_dimension, self.hs, input_name = self.iname, output_name = self.output_name)
