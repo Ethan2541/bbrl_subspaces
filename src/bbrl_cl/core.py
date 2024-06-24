@@ -30,16 +30,19 @@ class Task:
     """
     def __init__(self,env_agent_cfg: dict,
                       task_id: int,
+                      is_training_task,
                       input_dimension: tp.Union[None,int] = None,
                       output_dimension: tp.Union[None,int] = None,
                       )  -> None:
         self._task_id = task_id
         self._env_agent_cfg = env_agent_cfg
+        self._is_training_task = is_training_task
 
         if input_dimension is None or output_dimension is None:
-            env = env_agent_cfg["make_env_fn"](**env_agent_cfg["make_env_args"])
-            self._input_dimension = env.observation_space.shape[0]
-            self._output_dimension = env.action_space.shape[0]
+            env = self.make()[1]
+            obs_size, action_dim = env.get_obs_and_actions_sizes()
+            self._input_dimension = obs_size
+            self._output_dimension = action_dim
         else:
             self._input_dimension = input_dimension
             self._output_dimension = output_dimension
@@ -66,17 +69,17 @@ class Task:
 
         train_env_agent, eval_env_agent = None, None
     
-        if "xml_file" in cfg.gym_env.keys():
-            xml_file = assets_path + cfg.gym_env.xml_file
+        if "xml_file" in cfg.keys():
+            xml_file = assets_path + cfg.xml_file
             print("loading:", xml_file)
         else:
             xml_file = None
 
-        if "wrappers" in cfg.gym_env.keys():
-            print("using wrappers:", cfg.gym_env.wrappers)
-            # wrappers_name_list = cfg.gym_env.wrappers.split(',')
+        if "wrappers" in cfg.keys():
+            print("using wrappers:", cfg.wrappers)
+            # wrappers_name_list = cfg.wrappers.split(',')
             wrappers_list = []
-            wr = get_class(cfg.gym_env.wrappers)
+            wr = get_class(cfg.wrappers)
             # for i in range(len(wrappers_name_list)):
             wrappers_list.append(wr)
             wrappers = wrappers_list
@@ -86,7 +89,7 @@ class Task:
 
         # Train environment
         if xml_file is None:
-            if self.is_training_task:
+            if self._is_training_task:
                 train_env_agent = ParallelGymAgent(
                     partial(
                         make_env, cfg.env_name, autoreset=autoreset, wrappers=wrappers
@@ -104,10 +107,10 @@ class Task:
                 seed=cfg.seed.eval,
             )
         else:
-            if self.is_training_task:
+            if self._is_training_task:
                 train_env_agent = ParallelGymAgent(
                     partial(
-                        make_env, cfg.gym_env.env_name, autoreset=autoreset, wrappers=wrappers
+                        make_env, cfg.env_name, autoreset=autoreset, wrappers=wrappers
                     ),
                     cfg.n_envs,
                     include_last_state=include_last_state,

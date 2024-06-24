@@ -25,6 +25,33 @@ import time
 matplotlib.use("TkAgg")
 
 
+class Logger:
+    def __init__(self, logger):
+        self.logger = logger
+
+    def add_log(self, log_string, log_item, steps):
+        if isinstance(log_item, torch.Tensor) and log_item.dim() == 0:
+            log_item = log_item.item()
+        self.logger.add_scalar(log_string, log_item, steps)
+
+    # A specific function for RL algorithms having a critic, an actor and an entropy losses
+    def log_losses(self, critic_loss, entropy_loss, actor_loss, steps):
+        self.add_log("critic_loss", critic_loss, steps)
+        self.add_log("entropy_loss", entropy_loss, steps)
+        self.add_log("actor_loss", actor_loss, steps)
+
+    def log_reward_losses(self, rewards, nb_steps):
+        self.add_log("reward/mean", rewards.mean(), nb_steps)
+        self.add_log("reward/max", rewards.max(), nb_steps)
+        self.add_log("reward/min", rewards.min(), nb_steps)
+        self.add_log("reward/median", rewards.median(), nb_steps)
+        self.add_log("reward/std", rewards.std(), nb_steps)
+
+    def close(self) -> None:
+        self.logger.close()
+
+
+
 class SAC:
     def __init__(self, cfg):
         self.cfg = cfg
@@ -190,8 +217,9 @@ class SAC:
         return actor_loss.mean()
 
 
-    def run_sac(self, train_env_agent, eval_env_agent, logger, seed, info={}, trial=None):
+    def run(self, train_env_agent, eval_env_agent, logger, seed, info={}, trial=None):
         torch.random.manual_seed(seed=seed)
+        logger = Logger(logger)
         best_reward = float("-inf")
         n_epochs = 0
 
@@ -263,7 +291,7 @@ class SAC:
                 if entropy_coef_optimizer is not None:
                     ent_coef = torch.exp(log_entropy_coef.detach())
 
-                # Critic update part #
+                # Critic update part
                 critic_optimizer.zero_grad()
 
                 (critic_loss_1, critic_loss_2) = self.compute_critic_loss(
@@ -342,7 +370,7 @@ class SAC:
                 )
                 if self.cfg.save_best and best_reward == mean:
                     save_best(
-                        actor, self.cfg.gym_env.env_name, mean, "./sac_best_agents/", "sac"
+                        actor, self.cfg.env_name, mean, "./sac_best_agents/", "sac"
                     )
 
             info["replay_buffer"] = rb

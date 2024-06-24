@@ -18,8 +18,8 @@ class Subspace(Framework):
     """
     Model for the subspace method.
     """
-    def __init__(self,seed,params):
-        super().__init__(seed,params)
+    def __init__(self, seed, params):
+        super().__init__(seed, params)
         self.train_algorithm = instantiate_class(self.cfg.train_algorithm)
         self.alpha_search = instantiate_class(self.cfg.alpha_search)
         self.policy_agent = None
@@ -29,7 +29,7 @@ class Subspace(Framework):
         task_id = task.task_id()
         info = {"task_id": task_id}
         if task_id > 0:
-            self.policy_agent.add_anchor(logger = logger)
+            self.policy_agent.add_anchor(logger=logger)
             self.critic_agent.add_anchor(n_anchors = self.policy_agent[0].n_anchors,logger = logger)
 
         train_env_agent, eval_env_agent = task.make()

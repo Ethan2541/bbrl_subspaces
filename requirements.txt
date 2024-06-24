@@ -7,5 +7,6 @@ matplotlib
 numpy
 re
 ternary
+tk
 torch
 typing

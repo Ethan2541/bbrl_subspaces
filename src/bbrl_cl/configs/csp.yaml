@@ -3,9 +3,10 @@ name: csp
 scenario:
       name: "normal"
       classname: bbrl_cl.scenarios.GymScenario
+      cfg:
       domain: "HalfCheetah"
       tasks: ["HalfCheetah-v4"]
-      tasks_cfgs: [halfcheetah.normal]
+      tasks_cfgs: ["halfcheetah/normal.yaml"]
       repeat_scenario: 1
 
 logger:
@@ -24,78 +25,81 @@ hydra:
 
 framework:
       classname: bbrl_cl.frameworks.Subspace
-      lr_scaling:  0. #scaling of the lr * nb_anchors
+      seed: 0
+      params:
+            evaluation:
+                  n_rollouts: 1
+                  oracle_rollouts: 0
+                  evaluate_success: False
 
-      evaluation:
-            n_rollouts: 1
-            oracle_rollouts: 0
-            evaluate_success: False
+            train_algorithm:
+                  classname: bbrl_cl.algorithms.sac.SAC
+                  cfg:
+                        save_best: True
+                        env_name: ${scenario.domain}
+                        algorithm:
+                              seed:
+                                    q: 123
+                                    explorer: 456
+                                    torch: 789
+                              max_grad_norm: 0.5
+                              n_steps_train: 20
+                              n_steps: 1_000_000
+                              eval_interval: 2000
+                              buffer_size: 2e5
+                              batch_size: 64
+                              learning_starts: 10000
+                              tau_target: 0.05
+                              discount_factor: 0.95
+                              entropy_coef: 2.55e-5
+                              entropy_mode: "auto" # "auto" or "fixed"
+                              init_entropy_coef: 2e-7
 
-      train_algorithm:
-            classname: bbrl_cl.algorithms.sac.SAC
-            save_best: True
-            algorithm:
-                  seed:
-                        q: 123
-                        explorer: 456
-                        torch: 789
-                  max_grad_norm: 0.5
-                  n_steps_train: 20
-                  n_steps: 1_000_000
-                  eval_interval: 2000
-                  buffer_size: 2e5
-                  batch_size: 64
-                  learning_starts: 10000
-                  tau_target: 0.05
-                  discount_factor: 0.95
-                  entropy_coef: 2.55e-5
-                  entropy_mode: "auto" # "auto" or "fixed"
-                  init_entropy_coef: 2e-7
+                        actor_optimizer:
+                              classname: torch.optim.Adam
+                              lr: 1e-3
 
-            actor_optimizer:
-                  classname: torch.optim.Adam
-                  lr: 1e-3
+                        critic_optimizer:
+                              classname: torch.optim.Adam
+                              lr: 1e-3
 
-            critic_optimizer:
-                  classname: torch.optim.Adam
-                  lr: 1e-3
+                        entropy_optimizer:
+                              classname: torch.optim.Adam
+                              lr: 1e-3
 
-            entropy_optimizer:
-                  classname: torch.optim.Adam
-                  lr: 1e-3
+                        entropy_coef_optimizer:
+                              classname: torch.optim.Adam
+                              lr: 1e-3
 
-            entropy_coef_optimizer:
-                  classname: torch.optim.Adam
-                  lr: 1e-3
+                        policy_agent:
+                              classname: bbrl_cl.agents.SubspaceActionAgent
+                              hidden_size: 256
+                              input_dimension: nil
+                              output_dimension: nil
+                              start_steps: 0
 
-      alpha_search:
-            classname: bbrl_cl.algorithms.AlphaSearch
-            params:
-                  device: cuda:0
-                  n_estimations: 1024
-                  steps: 4096
-                  n_processes: 0
-                  improvement_threshold: 0.1
-                  time_size: ${framework.params.algorithm.params.buffer_time_size}
+                              n_initial_anchors: 1
+                              dist_type: flat
+                              refresh_rate: 1.
+                              resampling_policy: False
+                              repeat_alpha: 100
 
-                  n_rollouts: 32
-                  n_validation_steps: 200
+                        critic_agent:
+                              classname: bbrl_cl.agents.AlphaTwinCritics
+                              hidden_size: 256
+                              obs_dimension: nil
+                              action_dimension: nil
+                              n_anchors: 3
 
-      policy_agent:
-            classname: bbrl_cl.agents.SubspaceActionAgent
-            hidden_size: 256
-            input_dimension: nil
-            output_dimension: nil
-            start_steps: 0
+            alpha_search:
+                  classname: bbrl_cl.algorithms.AlphaSearch
+                  params:
+                        device: cuda:0
+                        n_estimations: 1024
+                        steps: 4096
+                        n_processes: 0
+                        improvement_threshold: 0.1
+                        time_size: ${framework.params.algorithm.params.buffer_time_size}
 
-            n_initial_anchors: 1
-            dist_type: flat
-            refresh_rate: 1.
-            resampling_policy: False
-            repeat_alpha: 100
-
-      critic_agent:
-            classname: bbrl_cl.agents.AlphaTwinCritics
-            hidden_size: 256
-            obs_dimension: nil
-            action_dimension: nil
+                        n_rollouts: 32
+                        n_validation_steps: 200
