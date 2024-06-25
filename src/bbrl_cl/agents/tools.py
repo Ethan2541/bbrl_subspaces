@@ -70,26 +70,6 @@ class LinearSubspace(nn.Module):
         self.anchors.append(new_anchor)
         self.n_anchors +=1
 
-    def L2_norms(self):
-        L2_norms = {}
-        with torch.no_grad():
-            for i in range(self.n_anchors):
-                for j in range(i+1,self.n_anchors):
-                    w1 = self.anchors[i].weight
-                    w2 = self.anchors[j].weight
-                    L2_norms["θ"+str(i+1)+"θ"+str(i+2)] = torch.norm(w1 - w2, p=2).item()
-        return L2_norms
-
-    def cosine_similarities(self):
-        cosine_similarities = {}
-        with torch.no_grad():
-            for i in range(self.n_anchors):
-                for j in range(i+1,self.n_anchors):
-                    w1 = self.anchors[i].weight
-                    w2 = self.anchors[j].weight
-                    p = ((w1 * w2).sum() / max(((w1 ** 2).sum().sqrt() * (w2 ** 2).sum().sqrt()),1e-8)) ** 2
-                    cosine_similarities["θ"+str(i+1)+"θ"+str(i+2)] = p.item()
-        return cosine_similarities
 
 class Sequential(nn.Sequential):
     def forward(self, input, alpha):

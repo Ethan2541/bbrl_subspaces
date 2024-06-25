@@ -238,23 +238,6 @@ class SubspaceAction(SubspaceAgent):
                 module.n_anchors -= 1
         self.n_anchors -= 1
 
-    def L2_norms(self):
-        L2_norms = {}
-        i = 1
-        for module in self.model:
-            if isinstance(module,LinearSubspace) and len(module.anchors)>1:
-                L2_norms["layer_"+str(i)] = module.L2_norms()
-                i += 1
-        return L2_norms
-
-    def cosine_similarities(self):
-        cosine_similarities = {}
-        i = 1
-        for module in self.model:
-            if isinstance(module,LinearSubspace) and len(module.anchors)>1:
-                cosine_similarities["layer_"+str(i)] = module.cosine_similarities()
-                i += 1
-        return cosine_similarities
 
 class AlphaCritic(SubspaceAgent):
     def __init__(self, n_anchors, obs_dimension, action_dimension, hidden_size, input_name="env/env_obs", output_name="q_values"):
