@@ -10,10 +10,3 @@ def SubspaceActionAgent(n_initial_anchors, dist_type, refresh_rate, input_dimens
     return SubspaceAgents(AlphaAgent(n_initial_anchors, dist_type, refresh_rate, resampling_policy, repeat_alpha),
                           SubspaceAction(n_initial_anchors,input_dimension,output_dimension, hidden_size, start_steps)
                           )
-
-def AlphaTwinCritics(n_anchors, obs_dimension, action_dimension, hidden_size):
-    """Twin critics model used for SAC. In addition to the (obs,actions), they also take the convex combination alpha as as input.
-    """
-    return SubspaceAgents(AlphaCritic(n_anchors, obs_dimension, action_dimension, hidden_size, output_name = "q_values"),
-                          AlphaCritic(n_anchors, obs_dimension, action_dimension, hidden_size, output_name = "q_values")
-                          )

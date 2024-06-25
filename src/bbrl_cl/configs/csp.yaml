@@ -44,7 +44,7 @@ framework:
                                     torch: 789
                               max_grad_norm: 0.5
                               n_steps_train: 20
-                              n_steps: 1_000_000
+                              n_steps: 10_000
                               eval_interval: 2000
                               buffer_size: 2e5
                               batch_size: 64
@@ -78,7 +78,7 @@ framework:
                               output_dimension: nil
                               start_steps: 0
 
-                              n_initial_anchors: 1
+                              n_initial_anchors: 3
                               dist_type: flat
                               refresh_rate: 1.
                               resampling_policy: False
@@ -99,7 +99,8 @@ framework:
                         steps: 4096
                         n_processes: 0
                         improvement_threshold: 0.1
-                        time_size: ${framework.params.algorithm.params.buffer_time_size}
+                        time_size: 2
+                        n_samples: 10
 
                         n_rollouts: 32
                         n_validation_steps: 200

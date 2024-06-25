@@ -45,20 +45,20 @@ class AlphaSearch:
         logger = logger.get_logger(type(self).__name__+str("/"))
         n_anchors = action_agent[0].n_anchors
         if (n_anchors > 1):
-            critic_agent.to(self.cfg.device)
+            critic_agent
             replay_buffer = info["replay_buffer"]
             n_samples = self.cfg.n_samples
             n_rollouts = self.cfg.n_rollouts
             n_steps = self.cfg.n_validation_steps
 
             # Estimating best alphas in the current subspace
-            alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([n_samples])).to(self.cfg.device)
+            alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([n_samples]))
             alphas = torch.stack([alphas for _ in range(self.cfg.time_size)], dim=0)
             values = []
             logger.message("Starting value estimation in the new subspace")
             _training_start_time = time.time()
             for _ in range(self.cfg.n_estimations):
-                replay_workspace = replay_buffer.get(alphas.shape[1]).to(self.cfg.device)
+                replay_workspace = replay_buffer.get_shuffled(alphas.shape[1])
                 replay_workspace.set_full("alphas",alphas)
                 with torch.no_grad():
                     critic_agent(replay_workspace)
@@ -70,14 +70,14 @@ class AlphaSearch:
             logger.message("Time elapsed: "+str(round(time.time() - _training_start_time,0))+" sec")
             
             # Estimating best alphas in the former subspace
-            alphas = Dirichlet(torch.ones(n_anchors - 1)).sample(torch.Size([n_samples])).to(self.cfg.device)
-            alphas = torch.cat([alphas,torch.zeros(*alphas.shape[:-1],1).to(self.cfg.device)], dim = -1)
+            alphas = Dirichlet(torch.ones(n_anchors - 1)).sample(torch.Size([n_samples]))
+            alphas = torch.cat([alphas,torch.zeros(*alphas.shape[:-1],1)], dim = -1)
             alphas = torch.stack([alphas for _ in range(self.cfg.time_size)], dim=0)
             values = []
             logger.message("Starting value estimation in the former subspace")
             _training_start_time = time.time()
             for _ in range(self.cfg.n_estimations):
-                replay_workspace = replay_buffer.get(alphas.shape[1]).to(self.cfg.device)
+                replay_workspace = replay_buffer.get_shuffled(alphas.shape[1])
                 replay_workspace.set_full("alphas",alphas)
                 with torch.no_grad():
                     critic_agent(replay_workspace)
@@ -96,14 +96,16 @@ class AlphaSearch:
             logger.message("Evaluating the two best alphas...")
             B = self.cfg.n_rollouts
             task._env_agent_cfg["n_envs"] = B
-            env_agent = task.make()
+            _, env_agent = task.make()
             alphas = torch.cat([best_alphas,best_alphas_before_training],dim = 0)
+
             action_agent.eval()
-            acquisition_agent = TemporalAgent(Agents(env_agent, action_agent)).to(self.cfg.device)
+            acquisition_agent = TemporalAgent(Agents(env_agent, action_agent))
             acquisition_agent.seed(seed)
             w = Workspace()
             with torch.no_grad():
                 acquisition_agent(w, t = 0, n_steps= n_steps, alphas = alphas)
+
             logger.message("Acquisition ended")
             cumulative_rewards, cumulative_rewards_before_training =  w["env/cumulated_reward"][-1].chunk(2)
             best_reward = cumulative_rewards.max()

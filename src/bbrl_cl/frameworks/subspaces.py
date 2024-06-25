@@ -67,6 +67,8 @@ class Subspace(Framework):
     def _evaluate_single_task(self,task,logger):
         _, env_agent = task.make()
         actor, _ = self.get_evaluation_agent(task.task_id())
+        actor.eval()
+        
         ev_agent = Agents(env_agent, actor)
         eval_agent = TemporalAgent(ev_agent)
 
