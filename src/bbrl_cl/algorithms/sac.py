@@ -17,6 +17,8 @@ from bbrl_algos.models.utils import save_best
 
 from bbrl import instantiate_class
 
+from bbrl_cl.agents.subspace_agents import SubspaceAgents
+
 import matplotlib
 import time
 
@@ -156,7 +158,7 @@ class SAC:
         # Compute q_values from both critics with the actions present in the buffer:
         # at t, we have Q(s,a) from the (s,a) in the RB
         q_agents(rb_workspace, t=0, n_steps=1)
-
+        
         with torch.no_grad():
             # Replay the current actor on the replay buffer to get actions of the
             # current actor
@@ -205,7 +207,7 @@ class SAC:
         # Recompute the q_values from the current actor, not from the actions in the buffer
 
         current_actor(rb_workspace, t=0, n_steps=1, stochastic=True)
-        action_logprobs_new = rb_workspace["policy/action_logprobs"]
+        action_logprobs_new = rb_workspace["action_logprobs"]
 
         q_agents(rb_workspace, t=0, n_steps=1)
         q_values_1, q_values_2 = rb_workspace["critic-1/q_values", "critic-2/q_values"]
@@ -239,8 +241,8 @@ class SAC:
         ) = self.create_sac_agent(train_env_agent, eval_env_agent)
 
         current_actor = TemporalAgent(actor)
-        q_agents = TemporalAgent(Agents(critic_1, critic_2))
-        target_q_agents = TemporalAgent(Agents(target_critic_1, target_critic_2))
+        q_agents = TemporalAgent(SubspaceAgents(critic_1, critic_2))
+        target_q_agents = TemporalAgent(SubspaceAgents(target_critic_1, target_critic_2))
         train_workspace = Workspace()
 
         # Creates a replay buffer
@@ -286,7 +288,6 @@ class SAC:
             if nb_steps > self.cfg.algorithm.learning_starts:
                 # Get a sample from the workspace
                 rb_workspace = rb.get_shuffled(self.cfg.algorithm.batch_size)
-                print(rb_workspace.variables)
 
                 terminated, reward = rb_workspace["env/terminated", "env/reward"]
                 if entropy_coef_optimizer is not None:
@@ -333,7 +334,7 @@ class SAC:
                 if entropy_coef_optimizer is not None:
                     # See Eq. (17) of the SAC and Applications paper
                     # log. probs have been computed when computing the actor loss
-                    action_logprobs_rb = rb_workspace["policy/action_logprobs"].detach()
+                    action_logprobs_rb = rb_workspace["action_logprobs"].detach()
                     entropy_coef_loss = -(
                         log_entropy_coef.exp() * (action_logprobs_rb + target_entropy)
                     ).mean()
@@ -378,7 +379,7 @@ class SAC:
             r = {"n_epochs": n_epochs, "training_time": time.time() - _training_start_time}
 
         # Arbitrarily returns the critic_1
-        return r, actor, critic_1, info
+        return r, actor, SubspaceAgents(critic_1), info
 
 
     def load_best(self, best_filename):

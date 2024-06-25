@@ -171,14 +171,14 @@ class SubspaceAction(SubspaceAgent):
                 LinearSubspace(self.n_anchors, self.hs, self.output_dimension * 2),
             )
 
-    def forward(self, t = None, q_update = False, policy_update = False, **kwargs):
+    def forward(self, t=None, q_update=False, policy_update=False, stochastic=False, **kwargs):
         if not self.training:
             x = self.get((self.iname, t))
             alphas = self.get(("alphas",t))
             mu, _ = self.model(x,alphas).chunk(2, dim=-1)
             action = torch.tanh(mu)
             self.set(("action", t), action)
-        elif not (t is None):
+        elif not stochastic:
             x = self.get((self.iname, t))
             alphas = self.get(("alphas",t))
             if self.counter <= self.start_steps:
@@ -257,14 +257,14 @@ class SubspaceAction(SubspaceAgent):
         return cosine_similarities
 
 class AlphaCritic(SubspaceAgent):
-    def __init__(self, n_anchors, obs_dimension, action_dimension, hs, input_name="env/env_obs", output_name="q"):
+    def __init__(self, n_anchors, obs_dimension, action_dimension, hidden_size, input_name="env/env_obs", output_name="q_values"):
         super().__init__()
         self.iname = input_name
         self.n_anchors = n_anchors
         self.obs_dimension = obs_dimension
         self.action_dimension= action_dimension
         self.input_size = self.obs_dimension + self.action_dimension + self.n_anchors
-        self.hs = hs
+        self.hs = hidden_size
         self.output_name = output_name
         self.model = nn.Sequential(
             nn.Linear(self.input_size,self.hs),
@@ -291,7 +291,6 @@ class AlphaCritic(SubspaceAgent):
             alphas = torch.cat([alphas,torch.zeros(*alphas.shape[:-1],self.n_anchors - alphas.shape[-1]).to(alphas.device)], dim = -1)
         input = torch.cat([input, action, alphas], dim=-1)
         critic = self.model(input).squeeze(-1)
-        print(f"{self.name}/{self.output_name}")
         self.set(f"{self.name}/{self.output_name}", critic)
 
     def add_anchor(self, n_anchors = None, logger = None,**kwargs)-> None:

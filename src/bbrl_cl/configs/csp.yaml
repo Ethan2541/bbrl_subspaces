@@ -85,7 +85,7 @@ framework:
                               repeat_alpha: 100
 
                         critic_agent:
-                              classname: bbrl_cl.agents.AlphaTwinCritics
+                              classname: bbrl_cl.agents.subspace_agents.AlphaCritic
                               hidden_size: 256
                               obs_dimension: nil
                               action_dimension: nil

@@ -62,7 +62,7 @@ class AlphaSearch:
                 replay_workspace.set_full("alphas",alphas)
                 with torch.no_grad():
                     critic_agent(replay_workspace)
-                values.append(replay_workspace["q1"].mean(0))
+                values.append(replay_workspace["critic-1/q_values"].mean(0))
             values = torch.stack(values,dim = 0).mean(0)
             best_alphas = alphas[0,values.topk(n_rollouts // 2).indices]
             info["best_alphas"] = best_alphas
@@ -81,7 +81,7 @@ class AlphaSearch:
                 replay_workspace.set_full("alphas",alphas)
                 with torch.no_grad():
                     critic_agent(replay_workspace)
-                values.append(replay_workspace["q1"].mean(0))
+                values.append(replay_workspace["critic-1/q_values"].mean(0))
             values = torch.stack(values,dim = 0).mean(0)
             best_alphas_before_training = alphas[0,values.topk(n_rollouts - n_rollouts // 2).indices]
             info["best_alphas_before_training"] = best_alphas_before_training
