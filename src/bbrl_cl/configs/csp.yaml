@@ -2,7 +2,7 @@ name: csp
 
 scenario:
       name: "normal"
-      classname: bbrl_cl.scenarios.GymScenario
+      classname: bbrl_cl.scenarios.gymnasium.GymScenario
       cfg:
       domain: "HalfCheetah"
       tasks: ["HalfCheetah-v4"]
