@@ -17,7 +17,8 @@ from bbrl_algos.models.utils import save_best
 
 from bbrl import instantiate_class
 
-from bbrl_cl.agents.subspace_agents import SubspaceAgents
+from bbrl_cl.agents.utils import SubspaceAgents
+from bbrl_cl.logger import Logger
 
 import matplotlib
 import time
@@ -25,32 +26,6 @@ import time
 # HYDRA_FULL_ERROR = 1
 
 matplotlib.use("TkAgg")
-
-
-class Logger:
-    def __init__(self, logger):
-        self.logger = logger
-
-    def add_log(self, log_string, log_item, steps):
-        if isinstance(log_item, torch.Tensor) and log_item.dim() == 0:
-            log_item = log_item.item()
-        self.logger.add_scalar(log_string, log_item, steps)
-
-    # A specific function for RL algorithms having a critic, an actor and an entropy losses
-    def log_losses(self, critic_loss, entropy_loss, actor_loss, steps):
-        self.add_log("critic_loss", critic_loss, steps)
-        self.add_log("entropy_loss", entropy_loss, steps)
-        self.add_log("actor_loss", actor_loss, steps)
-
-    def log_reward_losses(self, rewards, nb_steps):
-        self.add_log("reward/mean", rewards.mean(), nb_steps)
-        self.add_log("reward/max", rewards.max(), nb_steps)
-        self.add_log("reward/min", rewards.min(), nb_steps)
-        self.add_log("reward/median", rewards.median(), nb_steps)
-        self.add_log("reward/std", rewards.std(), nb_steps)
-
-    def close(self) -> None:
-        self.logger.close()
 
 
 
@@ -97,7 +72,7 @@ class SAC:
         )
 
 
-    # Configure the optimizer
+    # Configure the actor and critic optimizers
     def setup_optimizers(self, actor, critic_1, critic_2):
         actor_optimizer_args = get_arguments(self.cfg.actor_optimizer)
         parameters = actor.parameters()
@@ -127,7 +102,6 @@ class SAC:
             return None, None
 
 
-    # %%
     def compute_critic_loss(
         self,
         reward,
@@ -139,7 +113,7 @@ class SAC:
         ent_coef,
     ):
         """
-        Computes the critic loss for a set of $S$ transition samples
+        Computes the critic loss, using the sampled policy, for a set of $S$ transition samples
 
         Args:
             cfg: The experimental configuration
@@ -162,7 +136,7 @@ class SAC:
         with torch.no_grad():
             # Replay the current actor on the replay buffer to get actions of the
             # current actor
-            current_actor(rb_workspace, t=1, n_steps=1, stochastic=True)
+            current_actor(rb_workspace, t=1, n_steps=1, predict_proba=True)
 
             # Compute target q_values from both target critics: at t+1, we have
             # Q(s+1,a+1) from the (s+1,a+1) where a+1 has been replaced in the RB
@@ -177,8 +151,6 @@ class SAC:
             "target-critic-2/q_values",
         ]
 
-        # [[student]] Compute temporal difference
-
         q_next = torch.min(post_q_values_1[1], post_q_values_2[1]).squeeze(-1)
         v_phi = q_next - ent_coef * action_logprobs_next[1]
 
@@ -189,12 +161,10 @@ class SAC:
         td_error_2 = td_2**2
         critic_loss_1 = td_error_1.mean()
         critic_loss_2 = td_error_2.mean()
-        # [[/student]]
 
         return critic_loss_1, critic_loss_2
 
 
-    # %%
     def compute_actor_loss(self, ent_coef, current_actor, q_agents, rb_workspace):
         """
         Actor loss computation
@@ -206,7 +176,7 @@ class SAC:
 
         # Recompute the q_values from the current actor, not from the actions in the buffer
 
-        current_actor(rb_workspace, t=0, n_steps=1, stochastic=True)
+        current_actor(rb_workspace, t=0, n_steps=1, predict_proba=True)
         action_logprobs_new = rb_workspace["action_logprobs"]
 
         q_agents(rb_workspace, t=0, n_steps=1)
@@ -216,10 +186,14 @@ class SAC:
 
         actor_loss = ent_coef * action_logprobs_new[0] - current_q_values[0]
 
+        # Adding the anticollapse term to ensure that the policies are different enough
+        penalty = sum(list(current_actor.agent.cosine_similarities().items()))
+        actor_loss -= penalty
+
         return actor_loss.mean()
 
 
-    def run(self, train_env_agent, eval_env_agent, logger, seed, info={}, trial=None):
+    def run(self, train_env_agent, eval_env_agent, logger, seed, info={}):
         torch.random.manual_seed(seed=seed)
         logger = Logger(logger)
         best_reward = float("-inf")
@@ -263,6 +237,7 @@ class SAC:
         _training_start_time = time.time()
         while nb_steps < self.cfg.algorithm.n_steps:
             # Execute the agent in the workspace
+            # TODO: should the predict_proba be set to True?
             if nb_steps > 0:
                 train_workspace.zero_grad()
                 train_workspace.copy_n_last_steps(1)
@@ -270,14 +245,12 @@ class SAC:
                     train_workspace,
                     t=1,
                     n_steps=self.cfg.algorithm.n_steps_train,
-                    stochastic=True,
                 )
             else:
                 train_agent(
                     train_workspace,
                     t=0,
                     n_steps=self.cfg.algorithm.n_steps_train,
-                    stochastic=True,
                 )
 
             transition_workspace = train_workspace.get_transitions()
@@ -358,7 +331,6 @@ class SAC:
                     eval_workspace,
                     t=0,
                     stop_variable="env/done",
-                    stochastic=False,
                 )
                 rewards = eval_workspace["env/cumulated_reward"][-1]
                 mean = rewards.mean()
@@ -385,3 +357,26 @@ class SAC:
     def load_best(self, best_filename):
         best_agent = torch.load(best_filename)
         return best_agent
+    
+
+from bbrl_algos.models.envs import get_env_agents
+from bbrl import instantiate_class
+import hydra
+@hydra.main(
+    config_path="./configs/",
+    # config_name="sac_lunar_lander_continuous.yaml",
+    # config_name="sac_cartpolecontinuous.yaml",
+    config_name="sac_pendulum.yaml",
+    # config_name="sac_swimmer_optuna.yaml",
+    # config_name="sac_swimmer.yaml",
+    # config_name="sac_walker_test.yaml",
+    # config_name="sac_torcs.yaml",
+    # version_base="1.3",
+)
+def main(cfg):
+    train_env_agent, eval_env_agent = get_env_agents(cfg)
+    logger = instantiate_class(cfg.logger)
+    SAC(cfg).run(train_env_agent, eval_env_agent, logger, cfg.algorithm.seed.torch)
+
+if __name__ == "__main__":
+    main()

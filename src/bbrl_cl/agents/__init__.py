@@ -1,7 +1,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 #
-from .subspace_agents import *
+from .agent import *
 
 
 def SubspaceActionAgent(n_initial_anchors, dist_type, refresh_rate, input_dimension,output_dimension, hidden_size, start_steps, resampling_policy, repeat_alpha):

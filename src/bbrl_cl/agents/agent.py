@@ -7,8 +7,7 @@ import torch.nn.functional as F
 from torch import nn
 from torch.distributions.categorical import Categorical
 
-from .tools import *
-from .utils import SubspaceAgent
+from .utils import *
 
 
 class AlphaAgent(SubspaceAgent):
@@ -41,6 +40,7 @@ class AlphaAgent(SubspaceAgent):
 
 
     # Reward tracking
+    # TODO
     def track_reward(self, t=None):
         if t is not None:
             if t == 0:
@@ -54,7 +54,7 @@ class AlphaAgent(SubspaceAgent):
                 self.set(("tracking_reward", t),tracking_reward)
 
 
-    def forward(self, t=None, force_random=False, q_update=False, policy_update=False, alphas=None, mute_alpha=False, **args):
+    def forward(self, t=None, force_random=False, policy_update=False, alphas=None, mute_alpha=False, **args):
         if mute_alpha:
             pass
         self.track_reward(t)
@@ -97,6 +97,7 @@ class AlphaAgent(SubspaceAgent):
             self.set(("alphas", t), alphas)
         
         # Either use the current policy or a new resampled policy for the actor loss
+        # TODO
         elif policy_update:
             if self.resampling_policy:
                 T = self.workspace.time_size()
@@ -180,6 +181,7 @@ class SubspaceAction(SubspaceAgent):
         self.hs = hidden_size
         
         # Network creation
+        # TODO
         if only_head:
             self.model = Sequential(LinearSubspace(self.n_anchors, self.hs, self.output_dimension * 2)) 
         else:
@@ -194,7 +196,7 @@ class SubspaceAction(SubspaceAgent):
             )
 
 
-    def forward(self, t=None, q_update=False, policy_update=False, predict_proba=False, **kwargs):
+    def forward(self, t=None, policy_update=False, predict_proba=False, **kwargs):
         # Outside of training, the output is the linear combination of the anchors' outputs, given their respective weights alphas
         if not self.training:
             x = self.get((self.iname, t))
@@ -207,9 +209,9 @@ class SubspaceAction(SubspaceAgent):
         elif not predict_proba:
             x = self.get((self.iname, t))
             alphas = self.get(("alphas", t))
-            # Steps before actual training (see learning_starts)
+            # Before threshold, action is random
             if self.counter <= self.start_steps:
-                action = torch.rand(x.shape[0], self.output_dimension)*2- 1
+                action = torch.rand(x.shape[0], self.output_dimension)*2 - 1
             else:
                 mu, log_std = self.model(x,alphas).chunk(2, dim=-1)
                 log_std = torch.clip(log_std, min=-20., max=2.)
@@ -222,10 +224,7 @@ class SubspaceAction(SubspaceAgent):
         else:
             input = self.get(self.iname)
             # Choosing the sampled policy based on the situation
-            # TODO: remove the alphas_q_update and consider keeping the policy_update
-            if q_update:
-                alphas = self.get("alphas_q_update")
-            elif policy_update:
+            if policy_update:
                 alphas = self.get("alphas_policy_update")
             else:
                 alphas = self.get("alphas")
@@ -274,6 +273,11 @@ class SubspaceAction(SubspaceAgent):
         self.n_anchors -= 1
 
 
+    # TODO
+    def cosine_similarities(self, **kwargs):
+        return self.model.cosine_similarities()
+
+
 
 class AlphaCritic(SubspaceAgent):
     """ An agent used as a critic for the SAC algorithm.
@@ -309,14 +313,11 @@ class AlphaCritic(SubspaceAgent):
         )
 
 
-    def forward(self, q_update=False, policy_update=False, **kwargs):
+    def forward(self, policy_update=False, **kwargs):
         input = self.get(self.iname).detach()
         action = self.get(("action"))
         # Choosing the appropriate sampled policy
-        # TODO: same as above
-        if q_update:
-            alphas = self.get("alphas_q_update")
-        elif policy_update:
+        if policy_update:
             alphas = self.get("alphas_policy_update")
         else:
             alphas = self.get("alphas")
