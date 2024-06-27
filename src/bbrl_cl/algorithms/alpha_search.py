@@ -9,9 +9,10 @@ from bbrl.agents import Agents, TemporalAgent
 from ternary.helpers import simplex_iterator
 from torch.distributions.dirichlet import Dirichlet
 
-from bbrl_cl.agents.tools import LinearSubspace
+from bbrl_cl.agents.utils import LinearSubspace
 
 
+# After removing an anchor, the last added anchor should still be frozen (optimal subspace reached)
 def remove_anchor(model):
     model.agents[1].n_anchors -= 1
     for nn_module in model[1].model:
@@ -20,32 +21,43 @@ def remove_anchor(model):
             nn_module.n_anchors -= 1
     return model
 
+
 def draw_alphas(n_anchors, steps, scale, batch_size = None):
     midpoint = torch.ones(n_anchors).unsqueeze(0) / n_anchors
+    # A single policy is a point
     if n_anchors == 1:
-        alphas = torch.Tensor([[1.]]* steps)
+        alphas = torch.Tensor([[1.]] * steps)
+
+    # Two policies make a Line of Policies
     if n_anchors == 2:
-        alphas = torch.stack([torch.linspace(0.,1.,steps = steps - 1),1 - torch.linspace(0.,1.,steps = steps - 1)],dim=1)
-        alphas = torch.cat([midpoint,alphas],dim = 0)
+        alphas = torch.stack([torch.linspace(0., 1., steps=steps-1), 1 - torch.linspace(0., 1., steps=steps-1)], dim=1)
+        alphas = torch.cat([midpoint,alphas], dim=0)
+
+    # Triangle of Policies
     if n_anchors == 3:
-        alphas = torch.Tensor([[i/scale,j/scale,k/scale] for i,j,k in simplex_iterator(scale)])
-        alphas = torch.cat([midpoint,alphas],dim = 0)
+        alphas = torch.Tensor([[i/scale, j/scale, k/scale] for i, j, k in simplex_iterator(scale)])
+        alphas = torch.cat([midpoint,alphas], dim=0)
+
+    # Global Subspace of Policies
     if n_anchors > 3:
         dist = Dirichlet(torch.ones(n_anchors))
         last_anchor = torch.Tensor([0] * (n_anchors - 1) + [1]).unsqueeze(0)
-        alphas = torch.cat([last_anchor,midpoint,dist.sample(torch.Size([steps - 2]))], dim = 0)
-    #alphas = torch.split(alphas, alphas.shape[0] if batch_size is None else batch_size, dim = 0)
+        alphas = torch.cat([last_anchor, midpoint, dist.sample(torch.Size([steps-2]))], dim=0)
+    # alphas = torch.split(alphas, alphas.shape[0] if batch_size is None else batch_size, dim=0)
     return alphas
 
+
+
 class AlphaSearch:
-    def __init__(self,params):
+    def __init__(self, params):
         self.cfg = params
 
-    def run(self,action_agent, critic_agent, task, logger, seed, info = {}):
-        logger = logger.get_logger(type(self).__name__+str("/"))
+    def run(self, action_agent, critic_agent, task, logger, seed, info={}):
+        logger = logger.get_logger(type(self).__name__ + str("/"))
         n_anchors = action_agent[0].n_anchors
+        
+        # Subspace of policies (several anchors)
         if (n_anchors > 1):
-            critic_agent
             replay_buffer = info["replay_buffer"]
             n_samples = self.cfg.n_samples
             n_rollouts = self.cfg.n_rollouts
@@ -55,6 +67,7 @@ class AlphaSearch:
             alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([n_samples]))
             alphas = torch.stack([alphas for _ in range(self.cfg.time_size)], dim=0)
             values = []
+
             logger.message("Starting value estimation in the new subspace")
             _training_start_time = time.time()
             for _ in range(self.cfg.n_estimations):
@@ -63,17 +76,19 @@ class AlphaSearch:
                 with torch.no_grad():
                     critic_agent(replay_workspace)
                 values.append(replay_workspace["critic-1/q_values"].mean(0))
-            values = torch.stack(values,dim = 0).mean(0)
-            best_alphas = alphas[0,values.topk(n_rollouts // 2).indices]
+
+            values = torch.stack(values, dim=0).mean(0)
+            best_alphas = alphas[0, values.topk(n_rollouts//2).indices]
             info["best_alphas"] = best_alphas
-            logger.message("Estimated best alpha in the current subspace is : "+str(list(map(lambda x:round(x,2),best_alphas[0].tolist()))))
-            logger.message("Time elapsed: "+str(round(time.time() - _training_start_time,0))+" sec")
+            logger.message("Estimated best alpha in the current subspace is : " + str(list(map(lambda x: round(x,2), best_alphas[0].tolist()))))
+            logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")
             
             # Estimating best alphas in the former subspace
-            alphas = Dirichlet(torch.ones(n_anchors - 1)).sample(torch.Size([n_samples]))
-            alphas = torch.cat([alphas,torch.zeros(*alphas.shape[:-1],1)], dim = -1)
+            alphas = Dirichlet(torch.ones(n_anchors-1)).sample(torch.Size([n_samples]))
+            alphas = torch.cat([alphas, torch.zeros(*alphas.shape[:-1], 1)], dim=-1)
             alphas = torch.stack([alphas for _ in range(self.cfg.time_size)], dim=0)
             values = []
+
             logger.message("Starting value estimation in the former subspace")
             _training_start_time = time.time()
             for _ in range(self.cfg.n_estimations):
@@ -82,11 +97,12 @@ class AlphaSearch:
                 with torch.no_grad():
                     critic_agent(replay_workspace)
                 values.append(replay_workspace["critic-1/q_values"].mean(0))
-            values = torch.stack(values,dim = 0).mean(0)
-            best_alphas_before_training = alphas[0,values.topk(n_rollouts - n_rollouts // 2).indices]
+
+            values = torch.stack(values, dim=0).mean(0)
+            best_alphas_before_training = alphas[0, values.topk(n_rollouts - n_rollouts//2).indices]
             info["best_alphas_before_training"] = best_alphas_before_training
-            logger.message("Estimated best alpha in the former subspace is : "+str(list(map(lambda x:round(x,2),best_alphas_before_training[0].tolist()))))
-            logger.message("Time elapsed: "+str(round(time.time() - _training_start_time,0))+" sec")            
+            logger.message("Estimated best alpha in the former subspace is : " + str(list(map(lambda x: round(x,2), best_alphas_before_training[0].tolist()))))
+            logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")            
             
             del replay_workspace
             del alphas
@@ -113,7 +129,6 @@ class AlphaSearch:
             best_alpha = best_alphas[cumulative_rewards.argmax()]
             best_alpha_before_training = best_alphas_before_training[cumulative_rewards_before_training.argmax()]
 
-
             #### debug
             #print("-"*100)
             #print("\n---best_reward:",best_reward)
@@ -127,23 +142,27 @@ class AlphaSearch:
             #print("-"*100)
 
             # Deciding to keep the anchor or not
-            logger.message("best_reward = "+str(round(best_reward.item(),0))) 
-            logger.message("best_reward_before_training = "+str(round(best_reward_before_training.item(),0))) 
-            logger.message("threshold = "+str(round(best_reward_before_training.item() * (1 + self.cfg.improvement_threshold),0)))
+            logger.message("best_reward = " + str(round(best_reward.item(), 0))) 
+            logger.message("best_reward_before_training = " + str(round(best_reward_before_training.item(), 0))) 
+            logger.message("threshold = " + str(round(best_reward_before_training.item() * (1 + self.cfg.improvement_threshold), 0)))
+
             if best_reward <= best_reward_before_training * (1 + self.cfg.improvement_threshold):
                 action_agent.remove_anchor(logger=logger)
                 best_alpha_before_training = best_alpha_before_training[:-1]
-                action_agent.set_best_alpha(alpha = best_alpha_before_training, logger=logger)
+                action_agent.set_best_alpha(alpha=best_alpha_before_training, logger=logger)
                 info["best_alpha"] = best_alpha_before_training
             else:
-                action_agent.set_best_alpha(alpha = best_alpha, logger=logger)
+                action_agent.set_best_alpha(alpha=best_alpha, logger=logger)
                 info["best_alpha"] = best_alpha
 
             r = {"n_epochs": 0, "training_time": time.time() -_training_start_time}
             del w
+
+        # There is nothing to do if there is only a single policy: the only weight is set to 1 by default
         else:
             best_alpha = None
-            r = {"n_epochs":0,"training_time":0}
-            action_agent.set_best_alpha(alpha = best_alpha, logger=logger)
+            r = {"n_epochs":0, "training_time":0}
+            action_agent.set_best_alpha(alpha=best_alpha, logger=logger)
             info["best_alpha"] = best_alpha
+
         return r, action_agent, critic_agent, info

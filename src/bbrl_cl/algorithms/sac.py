@@ -6,32 +6,27 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from bbrl import get_arguments, get_class
+from bbrl import get_arguments, get_class, instantiate_class
 from bbrl.workspace import Workspace
 from bbrl.agents import Agents, TemporalAgent
-
 from bbrl.utils.replay_buffer import ReplayBuffer
 
 from bbrl_algos.models.shared_models import soft_update_params
 from bbrl_algos.models.utils import save_best
 
-from bbrl import instantiate_class
-
 from bbrl_cl.agents.utils import SubspaceAgents
-from bbrl_cl.logger import Logger
+from bbrl_cl.core import Logger
 
 import matplotlib
 import time
-
-# HYDRA_FULL_ERROR = 1
 
 matplotlib.use("TkAgg")
 
 
 
 class SAC:
-    def __init__(self, cfg):
-        self.cfg = cfg
+    def __init__(self, params):
+        self.cfg = params
 
     # Create the SAC Agent
     def create_sac_agent(self, train_env_agent, eval_env_agent):
@@ -187,7 +182,7 @@ class SAC:
         actor_loss = ent_coef * action_logprobs_new[0] - current_q_values[0]
 
         # Adding the anticollapse term to ensure that the policies are different enough
-        penalty = sum(list(current_actor.agent.cosine_similarities().items()))
+        penalty = sum(list(current_actor.agent.cosine_similarities().values()))
         actor_loss -= penalty
 
         return actor_loss.mean()
@@ -237,7 +232,6 @@ class SAC:
         _training_start_time = time.time()
         while nb_steps < self.cfg.algorithm.n_steps:
             # Execute the agent in the workspace
-            # TODO: should the predict_proba be set to True?
             if nb_steps > 0:
                 train_workspace.zero_grad()
                 train_workspace.copy_n_last_steps(1)
@@ -266,7 +260,7 @@ class SAC:
                 if entropy_coef_optimizer is not None:
                     ent_coef = torch.exp(log_entropy_coef.detach())
 
-                # Critic update part
+                # Critic update
                 critic_optimizer.zero_grad()
 
                 (critic_loss_1, critic_loss_2) = self.compute_critic_loss(
@@ -291,7 +285,7 @@ class SAC:
                 )
                 critic_optimizer.step()
 
-                # Actor update part #
+                # Actor update
                 actor_optimizer.zero_grad()
                 actor_loss = self.compute_actor_loss(
                     ent_coef, current_actor, q_agents, rb_workspace

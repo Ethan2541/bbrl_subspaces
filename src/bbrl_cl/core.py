@@ -215,7 +215,6 @@ class Framework:
             policy_agent.eval()
             acquisition_agent = TemporalAgent(Agents(env_agent,policy_agent))
             acquisition_agent.seed(self.seed*13+self._stage*100)
-            acquisition_agent.to(self.cfg.evaluation.device)
 
             avg_reward=0.0
             n=0
@@ -225,7 +224,7 @@ class Framework:
                 acquisition_agent(workspace,t=0,stop_variable="env/done")
                 ep_lengths=workspace["env/done"].max(0)[1]+1
                 B=ep_lengths.size()[0]
-                arange=torch.arange(B).to(ep_lengths.device)
+                arange=torch.arange(B)
                 cr=workspace["env/cumulated_reward"][ep_lengths-1,arange]
                 avg_reward+=cr.sum().item()
                 if self.cfg.evaluation.evaluate_success:
@@ -248,7 +247,7 @@ class CRLAgent(Agent):
         pass
 
     def add_regularizer(self, *args) -> torch.Tensor:
-        return torch.Tensor([0.]).to(list(self.parameters())[0].device)
+        return torch.Tensor([0.])
 
 class CRLAgents(Agents):
     """A batch of CRL Agents called sequentially.
@@ -259,3 +258,29 @@ class CRLAgents(Agents):
 
     def add_regularizer(self, *args) -> torch.Tensor:
         return torch.cat([agent.add_regularizer(*args) for agent in self]).sum()
+
+
+class Logger:
+    def __init__(self, logger):
+        self.logger = logger
+
+    def add_log(self, log_string, log_item, steps):
+        if isinstance(log_item, torch.Tensor) and log_item.dim() == 0:
+            log_item = log_item.item()
+        self.logger.add_scalar(log_string, log_item, steps)
+
+    # A specific function for RL algorithms having a critic, an actor and an entropy losses
+    def log_losses(self, critic_loss, entropy_loss, actor_loss, steps):
+        self.add_log("critic_loss", critic_loss, steps)
+        self.add_log("entropy_loss", entropy_loss, steps)
+        self.add_log("actor_loss", actor_loss, steps)
+
+    def log_reward_losses(self, rewards, nb_steps):
+        self.add_log("reward/mean", rewards.mean(), nb_steps)
+        self.add_log("reward/max", rewards.max(), nb_steps)
+        self.add_log("reward/min", rewards.min(), nb_steps)
+        self.add_log("reward/median", rewards.median(), nb_steps)
+        self.add_log("reward/std", rewards.std(), nb_steps)
+
+    def close(self) -> None:
+        self.logger.close()

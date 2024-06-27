@@ -17,7 +17,7 @@ class AlphaAgent(SubspaceAgent):
     ----------
     n_initial_anchors: number of policies that define the initial subspace
     dist_type: distribution used to sample the weights
-    refresh_rate
+    refresh_rate: how short the time interval between two weights samplings should be
     resampling_policy
     repeat_alpha: number of steps a sampled alphas vector should be used
     """
@@ -39,8 +39,8 @@ class AlphaAgent(SubspaceAgent):
         self.id = nn.Parameter(torch.randn(1,1))
 
 
-    # Reward tracking
-    # TODO
+    # Reward tracking: used to compute the cumulated reward for a given sampled policy. It is reset each time a new vector alphas is sampled
+    # When it is too low (below a specific threshold), a new policy is sampled
     def track_reward(self, t=None):
         if t is not None:
             if t == 0:
@@ -86,11 +86,11 @@ class AlphaAgent(SubspaceAgent):
                 done = self.get(("env/done", t)).float().unsqueeze(-1)
                 refresh_timestep = ((self.get(("env/timestep", t)) % self.repeat_alpha) == 0).float().unsqueeze(-1)
                 refresh = torch.max(done,refresh_timestep)
-                if ((done.sum() > 0) or (refresh_timestep.sum() > 0) ) and (self.refresh_rate<1.):
-                    cr = self.get(("tracking_reward", t))
-                    k = max(int(len(cr) * (1 - self.refresh_rate)) - 1, 0)
-                    threshold = sorted(cr,reverse = True)[k]
-                    refresh_condition = (cr < threshold).float().unsqueeze(-1)
+                if ((done.sum() > 0) or (refresh_timestep.sum() > 0) ) and (self.refresh_rate < 1.):
+                    alphas_cumulated_reward = self.get(("tracking_reward", t))
+                    k = max(int(len(alphas_cumulated_reward) * (1 - self.refresh_rate)) - 1, 0)
+                    threshold = sorted(alphas_cumulated_reward, reverse=True)[k]
+                    refresh_condition = (alphas_cumulated_reward < threshold).float().unsqueeze(-1)
                     refresh *= refresh_condition
                 alphas_old = self.get(("alphas", t-1))
                 alphas = alphas * refresh + alphas_old * (1 - refresh)
@@ -180,8 +180,7 @@ class SubspaceAction(SubspaceAgent):
         self.output_dimension = output_dimension
         self.hs = hidden_size
         
-        # Network creation
-        # TODO
+        # Creation of the n_anchors networks with two hidden layers each
         if only_head:
             self.model = Sequential(LinearSubspace(self.n_anchors, self.hs, self.output_dimension * 2)) 
         else:
@@ -242,17 +241,17 @@ class SubspaceAction(SubspaceAgent):
 
     def add_anchor(self, alpha=None, logger=None, **kwargs):
         i = 0
-        # TODO: understand this part
         alphas = [alpha] * (self.hs + 2)
-        if not (logger is None):
+        if logger is not None:
             logger = logger.get_logger(type(self).__name__+str("/"))
             if alpha is None:
                 logger.message("Adding one anchor with alpha = None")
             else:
                 logger.message("Adding one anchor with alpha = " + str(list(map(lambda x: round(x,2), alpha.tolist()))))
 
+        # Adding an anchor to each subspace layer, with the proper weight alpha
         for module in self.model:
-            if isinstance(module,LinearSubspace):
+            if isinstance(module, LinearSubspace):
                 module.add_anchor(alphas[i])
                 ### Sanity check
                 #if i == 0:
@@ -273,9 +272,19 @@ class SubspaceAction(SubspaceAgent):
         self.n_anchors -= 1
 
 
-    # TODO
+    # This function is inspired by what is used for the computation of the Line of Policies' penalty term 
     def cosine_similarities(self, **kwargs):
-        return self.model.cosine_similarities()
+        n = 0
+        cosine_similarities = {}
+        # The cosine similarities are the respective mean of each network layer's cosine similarities
+        for subspace in self.model:
+            if isinstance(subspace, LinearSubspace):
+                subspace_cosine_similarities = subspace.cosine_similarities()
+                for key, value in subspace_cosine_similarities.items():
+                    cosine_similarities[key] = cosine_similarities.get(key, 0) + value
+                # Bias + Weight
+                n += 2
+        return {key: similarity/n for key, similarity in cosine_similarities.items()}
 
 
 
