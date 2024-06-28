@@ -22,31 +22,6 @@ def remove_anchor(model):
     return model
 
 
-def draw_alphas(n_anchors, steps, scale, batch_size = None):
-    midpoint = torch.ones(n_anchors).unsqueeze(0) / n_anchors
-    # A single policy is a point
-    if n_anchors == 1:
-        alphas = torch.Tensor([[1.]] * steps)
-
-    # Two policies make a Line of Policies
-    if n_anchors == 2:
-        alphas = torch.stack([torch.linspace(0., 1., steps=steps-1), 1 - torch.linspace(0., 1., steps=steps-1)], dim=1)
-        alphas = torch.cat([midpoint,alphas], dim=0)
-
-    # Triangle of Policies
-    if n_anchors == 3:
-        alphas = torch.Tensor([[i/scale, j/scale, k/scale] for i, j, k in simplex_iterator(scale)])
-        alphas = torch.cat([midpoint,alphas], dim=0)
-
-    # Global Subspace of Policies
-    if n_anchors > 3:
-        dist = Dirichlet(torch.ones(n_anchors))
-        last_anchor = torch.Tensor([0] * (n_anchors - 1) + [1]).unsqueeze(0)
-        alphas = torch.cat([last_anchor, midpoint, dist.sample(torch.Size([steps-2]))], dim=0)
-    # alphas = torch.split(alphas, alphas.shape[0] if batch_size is None else batch_size, dim=0)
-    return alphas
-
-
 
 class AlphaSearch:
     def __init__(self, params):

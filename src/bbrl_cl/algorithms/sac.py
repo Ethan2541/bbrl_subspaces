@@ -181,9 +181,9 @@ class SAC:
 
         actor_loss = ent_coef * action_logprobs_new[0] - current_q_values[0]
 
-        # Adding the anticollapse term to ensure that the policies are different enough
+        # Adding a penalty to ensure that the policies are different enough to prevent the subspace from collapsing
         penalty = sum(list(current_actor.agent.cosine_similarities().values()))
-        actor_loss -= penalty
+        actor_loss += penalty
 
         return actor_loss.mean()
 
@@ -345,6 +345,7 @@ class SAC:
             r = {"n_epochs": n_epochs, "training_time": time.time() - _training_start_time}
 
         # Arbitrarily returns the critic_1
+        print(actor.get_subspace_anchors())
         return r, actor, SubspaceAgents(critic_1), info
 
 
@@ -358,13 +359,8 @@ from bbrl import instantiate_class
 import hydra
 @hydra.main(
     config_path="./configs/",
-    # config_name="sac_lunar_lander_continuous.yaml",
-    # config_name="sac_cartpolecontinuous.yaml",
-    config_name="sac_pendulum.yaml",
-    # config_name="sac_swimmer_optuna.yaml",
-    # config_name="sac_swimmer.yaml",
-    # config_name="sac_walker_test.yaml",
-    # config_name="sac_torcs.yaml",
+    config_name="sac_cartpole.yaml",
+    # config_name="sac_pendulum.yaml",
     # version_base="1.3",
 )
 def main(cfg):

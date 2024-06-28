@@ -42,6 +42,12 @@ class SubspaceAgents(CRLAgents):
             if cosine_similarities is not None:
                 return cosine_similarities
         return None
+    def get_subspace_anchors(self, **kwargs):
+        for agent in self:
+            anchors = agent.get_subspace_anchors()
+            if anchors is not None:
+                return anchors
+        return None
 
 
 
@@ -54,10 +60,12 @@ class SubspaceAgent(CRLAgent):
         pass
     def cosine_similarities(self, **kwargs):
         return None
+    def get_subspace_anchors(self, **kwargs):
+        return None
 
 
 
-# Group of policies (networks)
+# Layer of a group of policies
 class LinearSubspace(nn.Module):
     def __init__(self, n_anchors, in_channels, out_channels, bias = True, same_init = False, freeze_anchors = True):
         super().__init__()

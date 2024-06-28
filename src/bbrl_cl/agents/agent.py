@@ -1,6 +1,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 #
+import copy
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -78,7 +79,7 @@ class AlphaAgent(SubspaceAgent):
                 alphas2 = torch.cat([alphas2,torch.zeros(*alphas2.shape[:-1],1)], dim=-1)
             alphas = torch.cat([alphas1,alphas2], dim = 0)
 
-            if isinstance(self.dist,Categorical):
+            if isinstance(self.dist, Categorical):
                 alphas = F.one_hot(alphas,num_classes = self.n_anchors).float()
 
             # Change the sampled policy if necessary
@@ -86,7 +87,7 @@ class AlphaAgent(SubspaceAgent):
                 done = self.get(("env/done", t)).float().unsqueeze(-1)
                 refresh_timestep = ((self.get(("env/timestep", t)) % self.repeat_alpha) == 0).float().unsqueeze(-1)
                 refresh = torch.max(done,refresh_timestep)
-                if ((done.sum() > 0) or (refresh_timestep.sum() > 0) ) and (self.refresh_rate < 1.):
+                if ((done.sum() > 0) or (refresh_timestep.sum() > 0)) and (self.refresh_rate < 1.):
                     alphas_cumulated_reward = self.get(("tracking_reward", t))
                     k = max(int(len(alphas_cumulated_reward) * (1 - self.refresh_rate)) - 1, 0)
                     threshold = sorted(alphas_cumulated_reward, reverse=True)[k]
@@ -200,7 +201,7 @@ class SubspaceAction(SubspaceAgent):
         if not self.training:
             x = self.get((self.iname, t))
             alphas = self.get(("alphas", t))
-            mu, _ = self.model(x,alphas).chunk(2, dim=-1)
+            mu, _ = self.model(x, alphas).chunk(2, dim=-1)
             action = torch.tanh(mu)
             self.set(("action", t), action)
 
@@ -212,7 +213,7 @@ class SubspaceAction(SubspaceAgent):
             if self.counter <= self.start_steps:
                 action = torch.rand(x.shape[0], self.output_dimension)*2 - 1
             else:
-                mu, log_std = self.model(x,alphas).chunk(2, dim=-1)
+                mu, log_std = self.model(x, alphas).chunk(2, dim=-1)
                 log_std = torch.clip(log_std, min=-20., max=2.)
                 std = log_std.exp()
                 action = mu + torch.randn(*mu.shape) * std
@@ -232,7 +233,7 @@ class SubspaceAction(SubspaceAgent):
             log_std = torch.clip(log_std, min=-20., max=2.)
             std = log_std.exp()
             action = mu + torch.randn(*mu.shape) * std
-            log_prob = (-0.5 * (((action - mu) / (std + 1e-8)) ** 2 + 2 * log_std + np.log(2 * np.pi))).sum(-1, keepdim=True)
+            log_prob = (-0.5 * (((action - mu) / (std + 1e-8))**2 + 2*log_std + np.log(2*np.pi))).sum(-1, keepdim=True)
             log_prob -= (2*np.log(2) - action - F.softplus(-2*action)).sum(-1, keepdim=True)
             action = torch.tanh(action)
             self.set("action", action)
@@ -285,6 +286,19 @@ class SubspaceAction(SubspaceAgent):
                 # Bias + Weight
                 n += 2
         return {key: similarity/n for key, similarity in cosine_similarities.items()}
+    
+
+    def get_subspace_anchors(self, **kwargs):
+        anchors = {}
+        for anchor_id in range(self.n_anchors):
+            layers = []
+            for module in self.model:
+                if isinstance(module, LinearSubspace):
+                    layers.append(copy.deepcopy(module.anchors[anchor_id]))
+                else:
+                    layers.append(copy.deepcopy(module))
+            anchors[anchor_id] = Sequential(*layers)
+        return anchors
 
 
 

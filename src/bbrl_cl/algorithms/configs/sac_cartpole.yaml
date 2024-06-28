@@ -8,27 +8,29 @@ logger:
 
 algorithm:
       seed:
-            train: 335
-            eval: 983
+            train: 1
+            eval: 99
             q: 123
             explorer: 456
             torch: 789
+
+      nb_seeds: 1
       n_envs: 8
       n_steps_train: 32
       n_steps: 300_000
-      eval_interval: 5000
-      nb_evals: 10
+      max_grad_norm: 0.5
       buffer_size: 1e6
       batch_size: 256
-      learning_starts: 10000
+      eval_interval: 2_000
+      nb_evals: 10
+      learning_starts: 10_000
       tau_target: 0.05
-      max_grad_norm: 0.5
-      discount_factor: 0.95
+      discount_factor: 0.98
       entropy_mode: "auto" # "auto" or "fixed"
       init_entropy_coef: 2e-7
 
 gym_env:
-      env_name: Pendulum-v1
+      env_name: CartPoleContinuous-v1
 
 actor_optimizer:
       classname: torch.optim.Adam
@@ -44,12 +46,12 @@ entropy_coef_optimizer:
 
 policy_agent:
       classname: bbrl_cl.agents.SubspaceActionAgent
-      hidden_size: 32
+      hidden_size: 64
       input_dimension: nil
       output_dimension: nil
       start_steps: 0
 
-      n_initial_anchors: 1
+      n_initial_anchors: 3
       dist_type: flat
       refresh_rate: 1.
       resampling_policy: False
@@ -60,4 +62,4 @@ critic_agent:
       hidden_size: 256
       obs_dimension: nil
       action_dimension: nil
-      n_anchors: 1
+      n_anchors: 3
