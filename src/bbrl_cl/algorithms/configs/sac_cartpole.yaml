@@ -17,7 +17,7 @@ algorithm:
       nb_seeds: 1
       n_envs: 8
       n_steps_train: 32
-      n_steps: 50_000
+      n_steps: 20_000
       max_grad_norm: 0.5
       buffer_size: 1e6
       batch_size: 256
@@ -69,8 +69,9 @@ alpha_search:
       params:
             device: cuda:0
             n_estimations: 1024
-            steps: 4096
-            n_processes: 0
             n_rollouts: 32
             n_validation_steps: 200
             seed: 0
+
+visualization:
+      num_points: 60

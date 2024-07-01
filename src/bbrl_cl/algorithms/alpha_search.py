@@ -28,7 +28,7 @@ class AlphaSearch:
         self.cfg = params
 
     def run(self, env_agent, action_agent, critic_agent, logger, info={}):
-        logger = logger.get_logger(type(self).__name__ + str("/"))
+        logger = logger.get_logger(type(self).__name__)
         n_anchors = action_agent[0].n_anchors
         
         # Subspace of policies (several anchors)
@@ -75,12 +75,14 @@ class AlphaSearch:
                 acquisition_agent(w, t=0, n_steps=n_steps, alphas=best_alphas)
 
             logger.message("Acquisition ended")
+            
             cumulative_rewards =  w["env/cumulated_reward"][-1]
             best_reward = cumulative_rewards.max().item()
             best_alpha = best_alphas[cumulative_rewards.argmax()]
 
             logger.message("Best reward: " + str(round(best_reward, 2)))
-            logger.message("Best distribution: " + str(list(map(lambda x: round(x,2), best_alphas[0].tolist()))))
+            logger.message("Best distribution after validation: " + str(list(map(lambda x: round(x,2), best_alphas[0].tolist()))))
+            logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")
 
             r = {"n_epochs": 0, "training_time": time.time() - _training_start_time}
             del w

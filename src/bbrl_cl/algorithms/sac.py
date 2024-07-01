@@ -190,7 +190,9 @@ class SAC:
 
     def run(self, train_env_agent, eval_env_agent, logger, seed, info={}):
         torch.random.manual_seed(seed=seed)
-        logger = Logger(logger)
+        logger = logger.get_logger(type(self).__name__)
+        logger.message("Initialization")
+        bbrl_logger = Logger(logger)
         best_reward = float("-inf")
         n_epochs = 0
 
@@ -229,6 +231,7 @@ class SAC:
             target_entropy = -np.prod(train_env_agent.action_space.shape).astype(np.float32)
 
         # Training loop
+        logger.message("Training the subspace")
         _training_start_time = time.time()
         while nb_steps < self.cfg.algorithm.n_steps:
             # Execute the agent in the workspace
@@ -273,8 +276,8 @@ class SAC:
                     ent_coef,
                 )
 
-                logger.add_log("critic_loss_1", critic_loss_1, nb_steps)
-                logger.add_log("critic_loss_2", critic_loss_2, nb_steps)
+                bbrl_logger.add_log("critic_loss_1", critic_loss_1, nb_steps)
+                bbrl_logger.add_log("critic_loss_2", critic_loss_2, nb_steps)
                 critic_loss = critic_loss_1 + critic_loss_2
                 critic_loss.backward()
                 torch.nn.utils.clip_grad_norm_(
@@ -290,7 +293,7 @@ class SAC:
                 actor_loss = self.compute_actor_loss(
                     ent_coef, current_actor, q_agents, rb_workspace
                 )
-                logger.add_log("actor_loss", actor_loss, nb_steps)
+                bbrl_logger.add_log("actor_loss", actor_loss, nb_steps)
                 actor_loss.backward()
                 torch.nn.utils.clip_grad_norm_(
                     actor.parameters(), self.cfg.algorithm.max_grad_norm
@@ -308,8 +311,8 @@ class SAC:
                     entropy_coef_optimizer.zero_grad()
                     entropy_coef_loss.backward()
                     entropy_coef_optimizer.step()
-                    logger.add_log("entropy_coef_loss", entropy_coef_loss, nb_steps)
-                logger.add_log("entropy_coef", ent_coef, nb_steps)
+                    bbrl_logger.add_log("entropy_coef_loss", entropy_coef_loss, nb_steps)
+                bbrl_logger.add_log("entropy_coef", ent_coef, nb_steps)
 
                 # Soft update of target q function
                 soft_update_params(critic_1, target_critic_1, tau)
@@ -328,21 +331,23 @@ class SAC:
                 )
                 rewards = eval_workspace["env/cumulated_reward"][-1]
                 mean = rewards.mean()
-                logger.log_reward_losses(rewards, nb_steps)
+                bbrl_logger.log_reward_losses(rewards, nb_steps)
 
                 if mean > best_reward:
                     best_reward = mean
 
-                print(
-                    f"nb steps: {nb_steps}, reward: {mean:.02f}, best: {best_reward:.02f}"
-                )
+                logger.message(f"After {nb_steps} steps: reward = {mean:.02f} (best = {best_reward:.02f})")
+
                 if self.cfg.save_best and best_reward == mean:
                     save_best(
                         actor, self.cfg.env_name, mean, "./sac_best_agents/", "sac"
                     )
 
-            info["replay_buffer"] = rb
-            r = {"n_epochs": n_epochs, "training_time": time.time() - _training_start_time}
+        logger.message("Training ended")
+        logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")
+
+        info["replay_buffer"] = rb
+        r = {"n_epochs": n_epochs, "training_time": time.time() - _training_start_time}
 
         # Arbitrarily returns the critic_1
         return r, actor, SubspaceAgents(critic_1), info
@@ -354,6 +359,7 @@ class SAC:
     
 
 from bbrl_cl.agents.utils import get_env_agents
+from bbrl_cl.visualization.subspace_visualizer import SubspaceVisualizer
 # from bbrl_algos.models.envs import get_env_agents
 from bbrl import instantiate_class
 import hydra
@@ -361,14 +367,18 @@ import hydra
     config_path="./configs/",
     config_name="sac_cartpole.yaml",
     # config_name="sac_pendulum.yaml",
-    # version_base="1.3",
+    version_base="1.3",
 )
 def main(cfg):
     train_env_agent, eval_env_agent, alpha_env_agent = get_env_agents(cfg, alpha_search=True)
+    visualization_env_agent = copy.deepcopy(eval_env_agent)
     logger = instantiate_class(cfg.logger)
+
     r, action_agent, critic_agent, info = SAC(cfg).run(train_env_agent, eval_env_agent, logger, cfg.algorithm.seed.torch)
     a_s = instantiate_class(cfg.alpha_search)
-    a_s.run(alpha_env_agent, action_agent, critic_agent, logger, info)
+    r, action_agent, critic_agent, info = a_s.run(alpha_env_agent, action_agent, critic_agent, logger, info)
+
+    SubspaceVisualizer(cfg.visualization).plot_subspace(TemporalAgent(Agents(visualization_env_agent, action_agent)), logger)
 
 if __name__ == "__main__":
     main()
