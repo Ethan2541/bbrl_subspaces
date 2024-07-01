@@ -27,25 +27,24 @@ class AlphaSearch:
     def __init__(self, params):
         self.cfg = params
 
-    def run(self, action_agent, critic_agent, task, logger, seed, info={}):
+    def run(self, env_agent, action_agent, critic_agent, logger, info={}):
         logger = logger.get_logger(type(self).__name__ + str("/"))
         n_anchors = action_agent[0].n_anchors
         
         # Subspace of policies (several anchors)
         if (n_anchors > 1):
             replay_buffer = info["replay_buffer"]
-            n_samples = self.cfg.n_samples
             n_rollouts = self.cfg.n_rollouts
             n_steps = self.cfg.n_validation_steps
 
-            # Estimating best alphas in the subspace
-            alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([n_samples]))
-            alphas = torch.stack([alphas for _ in range(self.cfg.time_size)], dim=0)
+            # Estimating best alphas in the subspace using K-shot adaptation with K the number of rollouts
+            alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([n_rollouts]))
+            alphas = torch.stack([alphas for _ in range(2)], dim=0)
             values = []
 
+            # Get a list of n_estimations elements, which are Q-values tensors of size n_rollouts
             logger.message("Starting value estimation in the subspace")
             _training_start_time = time.time()
-            # K-shot adaptation where K is the number of estimations
             for _ in range(self.cfg.n_estimations):
                 replay_workspace = replay_buffer.get_shuffled(alphas.shape[1])
                 replay_workspace.set_full("alphas",alphas)
@@ -53,8 +52,11 @@ class AlphaSearch:
                     critic_agent(replay_workspace)
                 values.append(replay_workspace["critic-1/q_values"].mean(0))
 
+            # Get the average Q-values for each rollout and sort them
             values = torch.stack(values, dim=0).mean(0)
-            best_alphas = alphas[0, values.topk(n_rollouts).indices]
+            sorted_values_indices = values.argsort(descending=True)
+
+            best_alphas = alphas[0, sorted_values_indices]
             info["best_alphas"] = best_alphas
             logger.message("Estimated best alpha in the subspace is : " + str(list(map(lambda x: round(x,2), best_alphas[0].tolist()))))
             logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")
@@ -65,28 +67,28 @@ class AlphaSearch:
             
             # Validating best alphas through rollout using some budget
             logger.message("Evaluating the two best alphas...")
-            B = self.cfg.n_rollouts
-            task._env_agent_cfg["n_envs"] = B
-            _, env_agent = task.make()
 
             action_agent.eval()
             acquisition_agent = TemporalAgent(Agents(env_agent, action_agent))
-            acquisition_agent.seed(seed)
             w = Workspace()
             with torch.no_grad():
                 acquisition_agent(w, t=0, n_steps=n_steps, alphas=best_alphas)
 
             logger.message("Acquisition ended")
             cumulative_rewards =  w["env/cumulated_reward"][-1]
-            best_reward = cumulative_rewards.max()
+            best_reward = cumulative_rewards.max().item()
             best_alpha = best_alphas[cumulative_rewards.argmax()]
 
+            logger.message("Best reward: " + str(round(best_reward, 2)))
+            logger.message("Best distribution: " + str(list(map(lambda x: round(x,2), best_alphas[0].tolist()))))
+
+            r = {"n_epochs": 0, "training_time": time.time() - _training_start_time}
             del w
 
         # There is nothing to do if there is only a single policy: the only weight is set to 1 by default
         else:
             best_alpha = None
-            r = {"n_epochs":0, "training_time":0}
+            r = {"n_epochs": 0, "training_time": 0}
             action_agent.set_best_alpha(alpha=best_alpha, logger=logger)
             info["best_alpha"] = best_alpha
 

@@ -97,8 +97,7 @@ class AlphaAgent(SubspaceAgent):
                 alphas = alphas * refresh + alphas_old * (1 - refresh)
             self.set(("alphas", t), alphas)
         
-        # Either use the current policy or a new resampled policy for the actor loss
-        # TODO
+        # Either use the stored distributions or a new resampled policy for the actor loss
         elif policy_update:
             if self.resampling_policy:
                 T = self.workspace.time_size()
@@ -170,7 +169,7 @@ class SubspaceAction(SubspaceAgent):
     only_head: the model only has the last layer of the usual networks
     """
 
-    def __init__(self, n_initial_anchors, input_dimension, output_dimension, hidden_size, start_steps = 0, input_name = "env/env_obs", only_head = False):
+    def __init__(self, n_initial_anchors, input_dimension, output_dimension, hidden_size, start_steps=0, input_name="env/env_obs", only_head=False):
         super().__init__()
         self.start_steps = start_steps
         self.counter = 0
@@ -182,6 +181,7 @@ class SubspaceAction(SubspaceAgent):
         self.hs = hidden_size
         
         # Creation of the n_anchors networks with two hidden layers each
+        # LeakyReLU -> page 91
         if only_head:
             self.model = Sequential(LinearSubspace(self.n_anchors, self.hs, self.output_dimension * 2)) 
         else:
@@ -323,6 +323,9 @@ class AlphaCritic(SubspaceAgent):
         self.input_size = self.obs_dimension + self.action_dimension + self.n_anchors
         self.hs = hidden_size
         self.output_name = output_name
+
+        # The critic is used to evaluate the future averaged return on (s,a) pairs
+        # Adding the sampled distribution allows to consider an infinity of policies
         self.model = nn.Sequential(
             nn.Linear(self.input_size, self.hs),
             nn.LeakyReLU(negative_slope=0.2),

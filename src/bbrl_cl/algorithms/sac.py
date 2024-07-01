@@ -345,7 +345,6 @@ class SAC:
             r = {"n_epochs": n_epochs, "training_time": time.time() - _training_start_time}
 
         # Arbitrarily returns the critic_1
-        print(actor.get_subspace_anchors())
         return r, actor, SubspaceAgents(critic_1), info
 
 
@@ -354,7 +353,8 @@ class SAC:
         return best_agent
     
 
-from bbrl_algos.models.envs import get_env_agents
+from bbrl_cl.agents.utils import get_env_agents
+# from bbrl_algos.models.envs import get_env_agents
 from bbrl import instantiate_class
 import hydra
 @hydra.main(
@@ -364,9 +364,11 @@ import hydra
     # version_base="1.3",
 )
 def main(cfg):
-    train_env_agent, eval_env_agent = get_env_agents(cfg)
+    train_env_agent, eval_env_agent, alpha_env_agent = get_env_agents(cfg, alpha_search=True)
     logger = instantiate_class(cfg.logger)
-    SAC(cfg).run(train_env_agent, eval_env_agent, logger, cfg.algorithm.seed.torch)
+    r, action_agent, critic_agent, info = SAC(cfg).run(train_env_agent, eval_env_agent, logger, cfg.algorithm.seed.torch)
+    a_s = instantiate_class(cfg.alpha_search)
+    a_s.run(alpha_env_agent, action_agent, critic_agent, logger, info)
 
 if __name__ == "__main__":
     main()
