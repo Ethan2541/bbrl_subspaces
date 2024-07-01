@@ -5,8 +5,6 @@ from cvxopt import matrix, solvers
 
 from bbrl.workspace import Workspace
 
-from bbrl_algos.algos.dqn.dqn import local_get_env_agents
-
 
 
 def evaluate_agent(eval_agent, alpha):

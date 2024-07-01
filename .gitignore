@@ -1,7 +1,10 @@
 __pycache__
 
 src/bbrl_cl/run
+
+src/bbrl_cl/algorithms/figures
 src/bbrl_cl/algorithms/outputs
+src/bbrl_cl/algorithms/sac_logs
 
 src/bbrl_cl/_version.py
 src/bbrl_cl.egg-info

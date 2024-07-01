@@ -67,6 +67,7 @@ class AlphaSearch:
             
             # Validating best alphas through rollout using some budget
             logger.message("Evaluating the two best alphas...")
+            _validation_start_time = time.time()
 
             action_agent.eval()
             acquisition_agent = TemporalAgent(Agents(env_agent, action_agent))
@@ -84,7 +85,7 @@ class AlphaSearch:
             logger.message("Best distribution after validation: " + str(list(map(lambda x: round(x,2), best_alphas[0].tolist()))))
             logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")
 
-            r = {"n_epochs": 0, "training_time": time.time() - _training_start_time}
+            r = {"n_epochs": 0, "training_time": time.time() - _validation_start_time}
             del w
 
         # There is nothing to do if there is only a single policy: the only weight is set to 1 by default
