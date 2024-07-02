@@ -9,7 +9,7 @@ from bbrl.agents import Agents, TemporalAgent
 from ternary.helpers import simplex_iterator
 from torch.distributions.dirichlet import Dirichlet
 
-from bbrl_cl.agents.utils import LinearSubspace
+from bbrl_subspaces.agents.utils import LinearSubspace
 
 
 # After removing an anchor, the last added anchor should still be frozen (optimal subspace reached)

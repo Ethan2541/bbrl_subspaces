@@ -8,8 +8,8 @@ from bbrl.agents import Agents, TemporalAgent
 
 from bbrl_algos.models.envs import get_env_agents
 
-from bbrl_cl.algorithms.sac import SAC
-from bbrl_cl.visualization.subspace_visualizer import SubspaceVisualizer
+from bbrl_subspaces.algorithms.sac import SAC
+from bbrl_subspaces.visualization.subspace_visualizer import SubspaceVisualizer
 
 
 

@@ -1,5 +1,5 @@
 [project]
-name = "bbrl_cl"
+name = "bbrl_subspaces"
 license = {text = "MIT"}
 authors = [
     { name = "Olivier Sigaud",  email = "Olivier.Sigaud@isir.upmc.fr" },
@@ -12,10 +12,10 @@ dynamic = ["version"]
 dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools_scm]
-write_to = "src/bbrl_cl/_version.py"
+write_to = "src/bbrl_subspaces/_version.py"
 
 [build-system]
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 
 [project.urls]
-repository = "https://github.com/Ethan2541/bbrl_cl.git"
+repository = "https://github.com/Ethan2541/bbrl_subspaces.git"

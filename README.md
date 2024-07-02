@@ -12,19 +12,19 @@ It aims to re-implement the work from Jean-Baptiste GAYA on Policy Subspaces.
 * Use `pip` to install it with egg-link
 
 ```console
-conda create bbrl_cl_env
-conda activate bbrl_cl_env
-git clone https://github.com/Ethan2541/bbrl_cl
-cd bbrl_cl
+conda create bbrl_subspaces_env
+conda activate bbrl_subspaces_env
+git clone https://github.com/Ethan2541/bbrl_subspaces
+cd bbrl_subspaces
 pip install -e .
 ```
 
 
 ## Usage
 
-You simply need to go to src/bbrl_cl and execute:
+You simply need to go to src/bbrl_subspaces and execute:
 ```console
 python run.py -cn=csp
 ```
 
-If you want to add a custom scenario / tasks, you can edit the configuration files in `src/bbrl_cl/configs`. You can also change the value of the command line argument `-cn`, which refers to the configuration filename, for further testing.
+If you want to add a custom scenario / tasks, you can edit the configuration files in `src/bbrl_subspaces/configs`. You can also change the value of the command line argument `-cn`, which refers to the configuration filename, for further testing.

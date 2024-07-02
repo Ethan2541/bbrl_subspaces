@@ -14,8 +14,8 @@ from bbrl.utils.replay_buffer import ReplayBuffer
 from bbrl_algos.models.shared_models import soft_update_params
 from bbrl_algos.models.utils import save_best
 
-from bbrl_cl.agents.utils import SubspaceAgents
-from bbrl_cl.logger import Logger
+from bbrl_subspaces.agents.utils import SubspaceAgents
+from bbrl_subspaces.logger import Logger
 
 import matplotlib
 import time

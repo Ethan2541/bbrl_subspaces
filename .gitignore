@@ -1,10 +1,10 @@
 __pycache__
 
-src/bbrl_cl/run
+src/bbrl_subspaces/run
 
-src/bbrl_cl/algorithms/figures
-src/bbrl_cl/algorithms/outputs
-src/bbrl_cl/algorithms/sac_logs
+src/bbrl_subspaces/algorithms/figures
+src/bbrl_subspaces/algorithms/outputs
+src/bbrl_subspaces/algorithms/sac_logs
 
-src/bbrl_cl/_version.py
-src/bbrl_cl.egg-info
+src/bbrl_subspaces/_version.py
+src/bbrl_subspaces.egg-info
