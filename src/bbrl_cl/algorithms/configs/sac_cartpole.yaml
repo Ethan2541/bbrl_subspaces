@@ -62,16 +62,15 @@ critic_agent:
       hidden_size: 256
       obs_dimension: nil
       action_dimension: nil
-      n_anchors: 3
+      n_anchors: ${policy_agent.n_initial_anchors}
 
 alpha_search:
       classname: bbrl_cl.algorithms.AlphaSearch
       params:
-            device: cuda:0
             n_estimations: 1024
             n_rollouts: 32
             n_validation_steps: 200
             seed: 0
 
 visualization:
-      num_points: 60
+      num_points: 40

@@ -62,7 +62,7 @@ class SubspaceVisualizer:
         reward = evaluate_agent(eval_agent, alpha)
         alpha_reward_list.append((alpha, reward))
 
-        logger.message(f"Evaluating the rewards for {self.cfg.num_points} different policies")
+        logger.message(f"Evaluating the rewards for different policies ({self.cfg.num_points} points sampled per edge)")
         _plotting_start_time = time.time()
         for i in range(len(x_points)):
             if is_inside_triangle([x_points[i], y_points[i]], [0, 0], [1, 0], [0.5, np.sqrt(3) / 2]):

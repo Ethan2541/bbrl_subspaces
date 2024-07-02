@@ -61,3 +61,15 @@ critic_agent:
       obs_dimension: nil
       action_dimension: nil
       n_anchors: 1
+
+
+alpha_search:
+      classname: bbrl_cl.algorithms.AlphaSearch
+      params:
+            n_estimations: 1024
+            n_rollouts: 32
+            n_validation_steps: 200
+            seed: 0
+
+visualization:
+      num_points: 40

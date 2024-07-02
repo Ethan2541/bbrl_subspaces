@@ -190,9 +190,9 @@ class SAC:
 
     def run(self, train_env_agent, eval_env_agent, logger, seed, info={}):
         torch.random.manual_seed(seed=seed)
+        bbrl_logger = Logger(logger)
         logger = logger.get_logger(type(self).__name__)
         logger.message("Initialization")
-        bbrl_logger = Logger(logger)
         best_reward = float("-inf")
         n_epochs = 0
 
@@ -371,14 +371,13 @@ import hydra
 )
 def main(cfg):
     train_env_agent, eval_env_agent, alpha_env_agent = get_env_agents(cfg, alpha_search=True)
-    visualization_env_agent = copy.deepcopy(eval_env_agent)
     logger = instantiate_class(cfg.logger)
 
     r, action_agent, critic_agent, info = SAC(cfg).run(train_env_agent, eval_env_agent, logger, cfg.algorithm.seed.torch)
     a_s = instantiate_class(cfg.alpha_search)
     r, action_agent, critic_agent, info = a_s.run(alpha_env_agent, action_agent, critic_agent, logger, info)
 
-    SubspaceVisualizer(cfg.visualization).plot_subspace(TemporalAgent(Agents(visualization_env_agent, action_agent)), logger)
+    SubspaceVisualizer(cfg.visualization).plot_subspace(TemporalAgent(Agents(eval_env_agent, action_agent)), logger)
 
 if __name__ == "__main__":
     main()
