@@ -22,7 +22,7 @@ class SubspaceVisualizer:
 
 
     def plot_subspace(self, eval_agent, logger):
-        logger = logger.get_logger(type(self).__name__)
+        logger = logger.get_logger(type(self).__name__ + "/")
         logger.message("Preparing to plot the subspace")
 
         # Compute alphas and rewards
@@ -43,7 +43,7 @@ class SubspaceVisualizer:
                 slope, b = axis_equations_points[i]
                 x_coord = points_lower[j][0]
                 intersection_point_val = intersection_point(slope, b, x_coord)
-                # Check if the intersection point is not already in points or points2
+                # Check if the intersection point is not already in points_left or points_lower
                 if (intersection_point_val not in points_left) and (intersection_point_val not in points_lower):
                     # Check if the intersection point lies in the positive quadrant
                     if intersection_point_val[0] > 0 and intersection_point_val[1] > 0:

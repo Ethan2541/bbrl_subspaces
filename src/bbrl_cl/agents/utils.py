@@ -1,7 +1,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 #
-import bbrl_gymnasium
 import copy
 import os
 import torch
@@ -9,14 +8,9 @@ import torch.nn as nn
 
 from torch.distributions.categorical import Categorical
 from torch.distributions.dirichlet import Dirichlet
-from functools import partial
 
-from bbrl import get_class
-from bbrl.agents.gymnasium import ParallelGymAgent, make_env
-
-from bbrl_cl.core import CRLAgent, CRLAgents
-
-assets_path = os.getcwd() + "/../../assets/"
+from bbrl.agents import Agents
+from bbrl.agents.agent import Agent
 
 
 # Creation of distributions for sampling the policies (alphas)
@@ -34,63 +28,7 @@ def create_dist(dist_type, n_anchors):
 
 
 
-def get_env_agents(cfg, *, autoreset=True, include_last_state=True, alpha_search=False):
-    # Returns a pair of environments (train / evaluation) based on a configuration `cfg`
-    # Returns an additional environment to estimate the best sampled distribution of a subspace if alpha_search is True
-
-    if "xml_file" in cfg.gym_env.keys():
-        xml_file = assets_path + cfg.gym_env.xml_file
-        print("loading:", xml_file)
-    else:
-        xml_file = None
-
-    if "wrappers" in cfg.gym_env.keys():
-        print("using wrappers:", cfg.gym_env.wrappers)
-        # wrappers_name_list = cfg.gym_env.wrappers.split(',')
-        wrappers_list = []
-        wr = get_class(cfg.gym_env.wrappers)
-        # for i in range(len(wrappers_name_list)):
-        wrappers_list.append(wr)
-        wrappers = wrappers_list
-        print(wrappers)
-    else:
-        wrappers = []
-
-    # Train environment
-    train_env_agent = ParallelGymAgent(
-        partial(
-            make_env, cfg.gym_env.env_name, autoreset=autoreset, wrappers=wrappers
-        ),
-        cfg.algorithm.n_envs,
-        include_last_state=include_last_state,
-        seed=cfg.algorithm.seed.train,
-    )
-
-    # Test environment (implictly, autoreset=False, which is always the case for evaluation environments)
-    eval_env_agent = ParallelGymAgent(
-        partial(make_env, cfg.gym_env.env_name, wrappers=wrappers),
-        cfg.algorithm.nb_evals,
-        include_last_state=include_last_state,
-        seed=cfg.algorithm.seed.eval,
-    )
-
-    # Test environment to estimate the best sampled distribution of a subspace
-    if alpha_search:
-        alpha_env_agent = ParallelGymAgent(
-            partial(make_env, cfg.gym_env.env_name, wrappers=wrappers),
-            cfg.alpha_search.params.n_rollouts,
-            include_last_state=include_last_state,
-            seed=cfg.alpha_search.params.seed,
-        )
-
-    if alpha_search:
-        return train_env_agent, eval_env_agent, alpha_env_agent
-    else:
-        return train_env_agent, eval_env_agent
-
-
-
-class SubspaceAgents(CRLAgents):
+class SubspaceAgents(Agents):
     def add_anchor(self, **kwargs):
         for agent in self:
             agent.add_anchor(**kwargs)
@@ -115,7 +53,7 @@ class SubspaceAgents(CRLAgents):
 
 
 
-class SubspaceAgent(CRLAgent):
+class SubspaceAgent(Agent):
     def add_anchor(self, **kwargs):
         pass
     def remove_anchor(self, **kwargs):

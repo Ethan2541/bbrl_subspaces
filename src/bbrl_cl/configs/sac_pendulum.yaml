@@ -20,7 +20,7 @@ algorithm:
       nb_evals: 10
       buffer_size: 1e6
       batch_size: 256
-      learning_starts: 10000
+      learning_starts: 10_000
       tau_target: 0.05
       max_grad_norm: 0.5
       discount_factor: 0.95
@@ -49,7 +49,7 @@ policy_agent:
       output_dimension: nil
       start_steps: 0
 
-      n_initial_anchors: 1
+      n_initial_anchors: 3
       dist_type: flat
       refresh_rate: 1.
       resampling_policy: False
@@ -60,15 +60,13 @@ critic_agent:
       hidden_size: 256
       obs_dimension: nil
       action_dimension: nil
-      n_anchors: 1
-
+      n_anchors: ${policy_agent.n_initial_anchors}
 
 alpha_search:
       classname: bbrl_cl.algorithms.AlphaSearch
       params:
             n_estimations: 1024
             n_rollouts: 32
-            n_validation_steps: 200
             seed: 0
 
 visualization:

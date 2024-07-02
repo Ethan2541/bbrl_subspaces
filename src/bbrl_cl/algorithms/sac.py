@@ -15,7 +15,7 @@ from bbrl_algos.models.shared_models import soft_update_params
 from bbrl_algos.models.utils import save_best
 
 from bbrl_cl.agents.utils import SubspaceAgents
-from bbrl_cl.core import Logger
+from bbrl_cl.logger import Logger
 
 import matplotlib
 import time
@@ -191,7 +191,7 @@ class SAC:
     def run(self, train_env_agent, eval_env_agent, logger, seed, info={}):
         torch.random.manual_seed(seed=seed)
         bbrl_logger = Logger(logger)
-        logger = logger.get_logger(type(self).__name__)
+        logger = logger.get_logger(type(self).__name__ + "/")
         logger.message("Initialization")
         best_reward = float("-inf")
         n_epochs = 0
@@ -356,28 +356,3 @@ class SAC:
     def load_best(self, best_filename):
         best_agent = torch.load(best_filename)
         return best_agent
-    
-
-from bbrl_cl.agents.utils import get_env_agents
-from bbrl_cl.visualization.subspace_visualizer import SubspaceVisualizer
-# from bbrl_algos.models.envs import get_env_agents
-from bbrl import instantiate_class
-import hydra
-@hydra.main(
-    config_path="./configs/",
-    config_name="sac_cartpole.yaml",
-    # config_name="sac_pendulum.yaml",
-    version_base="1.3",
-)
-def main(cfg):
-    train_env_agent, eval_env_agent, alpha_env_agent = get_env_agents(cfg, alpha_search=True)
-    logger = instantiate_class(cfg.logger)
-
-    r, action_agent, critic_agent, info = SAC(cfg).run(train_env_agent, eval_env_agent, logger, cfg.algorithm.seed.torch)
-    a_s = instantiate_class(cfg.alpha_search)
-    r, action_agent, critic_agent, info = a_s.run(alpha_env_agent, action_agent, critic_agent, logger, info)
-
-    SubspaceVisualizer(cfg.visualization).plot_subspace(TemporalAgent(Agents(eval_env_agent, action_agent)), logger)
-
-if __name__ == "__main__":
-    main()

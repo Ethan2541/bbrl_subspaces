@@ -69,7 +69,6 @@ alpha_search:
       params:
             n_estimations: 1024
             n_rollouts: 32
-            n_validation_steps: 200
             seed: 0
 
 visualization:

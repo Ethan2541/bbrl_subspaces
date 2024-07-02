@@ -145,15 +145,6 @@ class AlphaAgent(SubspaceAgent):
             logger.message("Decreasing alpha size to " + str(self.n_anchors))
 
 
-    def set_task(self,task_id = None):
-        if task_id is None:
-            pass
-        elif task_id >= self.best_alphas.shape[0]:
-            self.best_alpha = torch.ones(self.n_anchors) / self.n_anchors
-        else: 
-            self.best_alpha = self.best_alphas[task_id]
-
-
 
 class SubspaceAction(SubspaceAgent):
     """ An agent used to act based on multiple policies, given their respective weights.
@@ -174,7 +165,6 @@ class SubspaceAction(SubspaceAgent):
         self.start_steps = start_steps
         self.counter = 0
         self.iname = input_name
-        self.task_id = 0
         self.n_anchors = n_initial_anchors
         self.input_size = input_dimension
         self.output_dimension = output_dimension
