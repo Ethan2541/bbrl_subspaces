@@ -39,7 +39,7 @@ class AlphaSearch:
             replay_buffer = info["replay_buffer"]
             n_rollouts = self.n_rollouts
 
-            # Estimating best alphas in the subspace using K-shot adaptation with K the number of rollouts
+            # Estimate best alphas in the subspace using n_rollouts sampled policies
             alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([n_rollouts]))
             alphas = torch.stack([alphas for _ in range(2)], dim=0)
             values = []
@@ -49,7 +49,7 @@ class AlphaSearch:
             _training_start_time = time.time()
             for _ in range(self.n_estimations):
                 replay_workspace = replay_buffer.get_shuffled(alphas.shape[1])
-                replay_workspace.set_full("alphas",alphas)
+                replay_workspace.set_full("alphas", alphas)
                 with torch.no_grad():
                     critic_agent(replay_workspace)
                 values.append(replay_workspace["critic-1/q_values"].mean(0))
