@@ -20,14 +20,16 @@ from bbrl_subspaces.visualization.subspace_visualizer import SubspaceVisualizer
     version_base="1.3",
 )
 def main(cfg):
-    train_env_agent, eval_env_agent = get_env_agents(cfg)
     logger = instantiate_class(cfg.logger)
+    sac = instantiate_class(cfg.subspace_algorithm)
+    alpha_search = instantiate_class(cfg.alpha_search)
+    visualizer = instantiate_class(cfg.visualization)
 
-    r, action_agent, critic_agent, info = SAC(cfg).run(train_env_agent, eval_env_agent, logger, cfg.algorithm.seed.torch)
-    a_s = instantiate_class(cfg.alpha_search)
-    r, action_agent, critic_agent, info = a_s.run(action_agent, critic_agent, logger, info)
+    train_env_agent, eval_env_agent = get_env_agents(cfg.subspace_algorithm.params)
+    r, action_agent, critic_agent, info = sac.run(train_env_agent, eval_env_agent, logger)
+    r, action_agent, critic_agent, info = alpha_search.run(action_agent, critic_agent, logger, info)
 
-    SubspaceVisualizer(cfg.visualization).plot_subspace(TemporalAgent(Agents(eval_env_agent, action_agent)), logger)
+    visualizer.plot_subspace(TemporalAgent(Agents(eval_env_agent, action_agent)), logger)
 
 if __name__ == "__main__":
     main()

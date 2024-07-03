@@ -188,8 +188,8 @@ class SAC:
         return actor_loss.mean()
 
 
-    def run(self, train_env_agent, eval_env_agent, logger, seed, info={}):
-        torch.random.manual_seed(seed=seed)
+    def run(self, train_env_agent, eval_env_agent, logger, info={}):
+        torch.random.manual_seed(seed=self.cfg.algorithm.seed.torch)
         bbrl_logger = Logger(logger)
         logger = logger.get_logger(type(self).__name__ + "/")
         logger.message("Initialization")

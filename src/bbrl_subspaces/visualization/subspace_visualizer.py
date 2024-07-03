@@ -1,3 +1,6 @@
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+#
 import os
 import time
 import torch
@@ -14,8 +17,8 @@ from .utils import evaluate_agent, find_axis_through_point, generate_left_edge_p
 
 
 class SubspaceVisualizer:
-    def __init__(self, params, output_path="./figures/"):
-        self.cfg = params
+    def __init__(self, num_points, output_path="./figures/"):
+        self.num_points = num_points
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         self.output_path = output_path
@@ -26,8 +29,8 @@ class SubspaceVisualizer:
         logger.message("Preparing to plot the subspace")
 
         # Compute alphas and rewards
-        points_left = generate_left_edge_points(self.cfg.num_points)
-        points_lower = generate_lower_edge_points(self.cfg.num_points)
+        points_left = generate_left_edge_points(self.num_points)
+        points_lower = generate_lower_edge_points(self.num_points)
 
         axis_equations_points = []
         i = 0
@@ -62,7 +65,7 @@ class SubspaceVisualizer:
         reward = evaluate_agent(eval_agent, alpha)
         alpha_reward_list.append((alpha, reward))
 
-        logger.message(f"Evaluating the rewards for different policies ({self.cfg.num_points} points sampled per edge)")
+        logger.message(f"Evaluating the rewards for different policies ({self.num_points} points sampled per edge)")
         _plotting_start_time = time.time()
         for i in range(len(x_points)):
             if is_inside_triangle([x_points[i], y_points[i]], [0, 0], [1, 0], [0.5, np.sqrt(3) / 2]):

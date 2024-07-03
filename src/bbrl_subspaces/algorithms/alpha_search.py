@@ -24,17 +24,20 @@ def remove_anchor(model):
 
 
 class AlphaSearch:
-    def __init__(self, params):
-        self.cfg = params
+    def __init__(self, n_estimations, n_rollouts, seed):
+        self.n_estimations = n_estimations
+        self.n_rollouts = n_rollouts
+        self.seed = seed
 
     def run(self, action_agent, critic_agent, logger, info={}):
+        torch.manual_seed(self.seed)
         logger = logger.get_logger(type(self).__name__ + "/")
         n_anchors = action_agent[0].n_anchors
         
         # Subspace of policies (several anchors)
         if (n_anchors > 1):
             replay_buffer = info["replay_buffer"]
-            n_rollouts = self.cfg.n_rollouts
+            n_rollouts = self.n_rollouts
 
             # Estimating best alphas in the subspace using K-shot adaptation with K the number of rollouts
             alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([n_rollouts]))
@@ -44,7 +47,7 @@ class AlphaSearch:
             # Get a list of n_estimations elements, which are Q-values tensors of size n_rollouts
             logger.message("Starting value estimation in the subspace")
             _training_start_time = time.time()
-            for _ in range(self.cfg.n_estimations):
+            for _ in range(self.n_estimations):
                 replay_workspace = replay_buffer.get_shuffled(alphas.shape[1])
                 replay_workspace.set_full("alphas",alphas)
                 with torch.no_grad():

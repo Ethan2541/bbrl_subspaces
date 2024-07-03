@@ -1,10 +1,8 @@
 __pycache__
 
-src/bbrl_subspaces/run
-
-src/bbrl_subspaces/algorithms/figures
-src/bbrl_subspaces/algorithms/outputs
-src/bbrl_subspaces/algorithms/sac_logs
+src/bbrl_subspaces/figures
+src/bbrl_subspaces/outputs
+src/bbrl_subspaces/sac_logs
 
 src/bbrl_subspaces/_version.py
 src/bbrl_subspaces.egg-info
