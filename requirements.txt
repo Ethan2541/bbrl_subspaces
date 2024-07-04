@@ -5,6 +5,7 @@ functools
 hydra
 matplotlib
 numpy
+plotly
 re
 ternary
 tk

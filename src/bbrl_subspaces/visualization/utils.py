@@ -4,8 +4,6 @@
 import torch
 import numpy as np
 
-from cvxopt import matrix, solvers
-
 from bbrl.workspace import Workspace
 
 
@@ -84,57 +82,7 @@ def is_inside_triangle(point, A, B, C):
 
 
 
-def projection_convex_hull(p, p1, p2, p3):
-    """
-    Find the projection of a point onto the convex hull defined by three points p1, p2 and p3.
-
-    Parameters:
-        p (numpy.array): The point to be projected.
-        p1 (numpy.array): First vector defining the convex hull.
-        p2 (numpy.array): Second vector defining the convex hull.
-        p3 (numpy.array): Third vector defining the convex hull.
-
-    Returns:
-        numpy.array: The projected points coefficients.
-    """
-    # Ensure all vectors have the same dimension
-    assert p.shape == p1.shape == p2.shape == p3.shape, "All vectors must have the same dimension"
-
-    n = 3
-    # Construct the P and q matrices for the QP problem
-    p_mat = 2 * np.array(
-        [[np.dot(p1, p1.T), np.dot(p1, p2.T), np.dot(p1, p3.T)],
-         [np.dot(p1, p2.T), np.dot(p2, p2.T), np.dot(p2, p3.T)],
-         [np.dot(p1, p3.T), np.dot(p2, p3.T), np.dot(p3, p3.T)]])
-    q_mat = -2 * np.array([np.dot(p, p1),
-                           np.dot(p, p2),
-                           np.dot(p, p3)])
-
-    g_mat = np.array([[-1, 0, 0],
-                      [0, -1, 0],
-                      [0, 0, -1]])
-    
-    h_mat = np.array([0, 0, 0])
-    a_mat = np.array([[1, 1, 1]])
-    b_mat = np.array([1.])
-
-    p_mat = p_mat.astype(np.double)
-    q_mat = q_mat.astype(np.double)
-    g_mat = g_mat.astype(np.double) 
-    h_mat = h_mat.astype(np.double)
-    a_mat = a_mat.astype(np.double)
-    b_mat = b_mat.astype(np.double)
-
-    # Convert matrices to cvxopt format
-    p_mat = matrix(p_mat, (n, n), 'd')
-    q_mat = matrix(q_mat, (n, 1), 'd')
-    g_mat = matrix(g_mat, (n, n), 'd')
-    h_mat = matrix(h_mat, (n, 1), 'd')
-    a_mat = matrix(a_mat, (1, n), 'd')
-    b_mat = matrix(b_mat, (1, 1), 'd')
-
-    sol = solvers.qp(p_mat, q_mat, G=g_mat, h=h_mat, A=a_mat, b=b_mat)
-
-    # Convert solution to tuple (x, y, z) and return the projected point
-    a1, a2, a3 = np.array(sol['x'])
-    return a1, a2, a3
+def get_point_from_alphas(alphas, vertices):
+    # alphas is a 1xN vector, vertices is a stack of row vectors, whose each row is the coordinates of a tip of the subspace
+    # returns a point of dimension (2,)
+    return (alphas @ vertices).reshape(-1)

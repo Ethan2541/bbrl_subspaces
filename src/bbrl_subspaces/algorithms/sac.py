@@ -25,7 +25,7 @@ matplotlib.use("TkAgg")
 
 
 class SAC:
-    def __init__(self, params):
+    def __init__(self, params, **kwargs):
         self.cfg = params
 
     # Create the SAC Agent
@@ -345,6 +345,9 @@ class SAC:
 
         logger.message("Training ended")
         logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")
+
+        for key, similarity in current_actor.agent.cosine_similarities().items():
+            logger.message(f"cos({key}): {round(similarity, 2)}")
 
         info["replay_buffer"] = rb
         r = {"n_epochs": n_epochs, "training_time": time.time() - _training_start_time}

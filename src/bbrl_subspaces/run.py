@@ -12,8 +12,8 @@ from bbrl_algos.models.envs import get_env_agents
 
 @hydra.main(
     config_path="./configs/",
-    # config_name="sac_cartpole.yaml",
-    config_name="sac_pendulum.yaml",
+    config_name="sac_cartpole.yaml",
+    # config_name="sac_pendulum.yaml",
     version_base="1.3",
 )
 def main(cfg):
@@ -26,7 +26,7 @@ def main(cfg):
     r, action_agent, critic_agent, info = sac.run(train_env_agent, eval_env_agent, logger)
     r, action_agent, critic_agent, info = alpha_search.run(action_agent, critic_agent, logger, info)
 
-    visualizer.plot_subspace(TemporalAgent(Agents(eval_env_agent, action_agent)), logger)
+    visualizer.plot_subspace(TemporalAgent(Agents(eval_env_agent, action_agent)), logger, info)
 
 if __name__ == "__main__":
     main()

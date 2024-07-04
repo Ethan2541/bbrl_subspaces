@@ -7,24 +7,27 @@ import torch
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
-import matplotlib.lines as mlines
 import numpy as np
+import plotly.graph_objects as go
 
 from datetime import datetime
 
-from .utils import evaluate_agent, find_axis_through_point, generate_left_edge_points, generate_lower_edge_points, get_alphas_from_point, intersection_point, is_inside_triangle
+from .utils import evaluate_agent, find_axis_through_point, generate_left_edge_points, generate_lower_edge_points, get_alphas_from_point, get_point_from_alphas, intersection_point, is_inside_triangle
 
 
 
 class SubspaceVisualizer:
-    def __init__(self, num_points, output_path="./figures/"):
+    def __init__(self, algorithm_name, env_name, num_points, interactive=False, output_path="./figures/", **kwargs):
+        self.algorithm_name = algorithm_name
+        self.env_name = env_name
+        self.is_interactive = interactive
         self.num_points = num_points
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         self.output_path = output_path
 
 
-    def plot_subspace(self, eval_agent, logger):
+    def plot_subspace(self, eval_agent, logger, info={}, show_figure=False, save_figure=True):
         logger = logger.get_logger(type(self).__name__ + "/")
         logger.message("Preparing to plot the subspace")
 
@@ -74,13 +77,21 @@ class SubspaceVisualizer:
                     reward = evaluate_agent(eval_agent, alpha)
                     alpha_reward_list.append((alpha, reward))
                     cpt += 1
+
+        if "best_alphas" in info:
+            info["best_alphas_reward"] = evaluate_agent(eval_agent, info["best_alphas"][0])
+
         logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
 
         # Plot the triangle with the points
-        self.plot_triangle_with_multiple_points(alpha_reward_list, logger)
+        if self.is_interactive:
+            self.plot_interactive_triangle_with_multiple_points(alpha_reward_list, logger, info=info, show_figure=show_figure)
+        else:
+            self.plot_triangle_with_multiple_points(alpha_reward_list, logger, info=info, show_figure=show_figure, save_figure=save_figure)
 
 
-    def plot_triangle_with_multiple_points(self, alpha_reward_list, logger):
+
+    def plot_triangle_with_multiple_points(self, alpha_reward_list, logger, info={}, show_figure=False, save_figure=True):
         """
         Plot a triangle with vertices representing policies
 
@@ -92,13 +103,13 @@ class SubspaceVisualizer:
         _plotting_start_time = time.time()
 
         # Plot the vertices of the equilateral triangle
-        triangle_vertices = np.array([[0, 0], [1, 0], [0.5, np.sqrt(3)/2],[0,0]])
-        plt.plot(triangle_vertices[:, 0], triangle_vertices[:, 1], 'k-')
+        triangle_vertices = np.array([[0, 0], [1, 0], [0.5, np.sqrt(3)/2]])
 
         # Plot policy vertices
-        plt.text(triangle_vertices[0, 0] - 0.05, triangle_vertices[0, 1] - 0.03, 'p1', fontsize=10)
-        plt.text(triangle_vertices[1, 0] + 0.05, triangle_vertices[1, 1] - 0.03, 'p2', fontsize=10)
-        plt.text(triangle_vertices[2, 0], triangle_vertices[2, 1] + 0.03, 'p3', fontsize=10)
+        # π1 is the first anchor of the subspace, π2 is the second anchor, and π3 the third one
+        plt.text(triangle_vertices[0, 0] - 0.06, triangle_vertices[0, 1] - 0.04, "π1", fontsize=10)
+        plt.text(triangle_vertices[1, 0] + 0.01, triangle_vertices[1, 1] - 0.04, "π2", fontsize=10)
+        plt.text(triangle_vertices[2, 0] - 0.02, triangle_vertices[2, 1] + 0.02, "π3", fontsize=10)
 
         # norm = mcolors.Normalize(vmin=0, vmax=500) #TO TO HAVE THE VALUES FROM 0 TO 500
         _, rewards_list = zip(*alpha_reward_list)
@@ -111,34 +122,146 @@ class SubspaceVisualizer:
         cmap = plt.get_cmap('RdBu_r')
 
         # Plot the points with adjusted positions and transparency
-        for coefs, reward in (alpha_reward_list):
-            new_point = np.dot(np.array(coefs), triangle_vertices[:3])
+        for coeffs, reward in alpha_reward_list:
+            new_point = np.dot(np.array(coeffs), triangle_vertices[:3])
             # jitter = np.random.normal(0, 0.01, 2)  # Add a small random jitter to avoid superposition
             # plt.scatter(new_point[0] + jitter[0], new_point[1] + jitter[1], c=reward, cmap=cmap, norm=norm, alpha=0.5, s=250)
-            plt.scatter(new_point[0], new_point[1], c=reward, cmap=cmap, norm=norm, s=60)
+            plt.scatter(new_point[0], new_point[1], c=reward, cmap=cmap, norm=norm, s=45)
+
+        # Plot the best estimated policy
+        if "best_alphas" in info:
+            best_point = get_point_from_alphas(np.array(info["best_alphas"][0].tolist()).reshape(1, -1), triangle_vertices)
+            plt.scatter(best_point[0], best_point[1], c="yellow", marker="*", edgecolors="black", linewidths=0.5, s=100, label="Best estimated policy")
 
         # Set axis limits and labels
         plt.xlim(-0.1, 1.1)
-        plt.ylim(-0.1, np.sqrt(3)/2 + 0.1)
+        plt.ylim(-0.1, 1.05)
 
         # Add color bar legend
         cbar = plt.colorbar(cm.ScalarMappable(cmap=cmap, norm=norm), ax=plt.gca())
         cbar.set_label('Reward')
 
         # Add legend
-        # Define custom legend elements
-        legend_elements = [
-            mlines.Line2D([], [], color='black', linewidth=1, label='Triangle Edges')
-        ]
-
-        # Add legend
-        plt.legend(handles=legend_elements)
+        plt.legend(loc="upper right")
+        plt.title(f"{self.algorithm_name} Subspace Rewards for {self.env_name}")
 
         # Then save the plot using the save_directory
-        now = datetime.now()
-        date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(self.output_path, f"subspace_{date_time}.png")
-        plt.savefig(save_path)
+        if save_figure:
+            now = datetime.now()
+            date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
+            save_path = os.path.join(self.output_path, f"{self.env_name}_{self.algorithm_name}_Subspace_Rewards_{date_time}.png")
+            plt.savefig(save_path)
 
         logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
-        plt.show()
+
+        if show_figure:
+            plt.show()
+
+
+
+    def plot_interactive_triangle_with_multiple_points(self, alpha_reward_list, logger, info={}, show_figure=True):
+        """
+        Plot a triangle with vertices representing policies and a new point calculated as a weighted sum of policies.
+        Color the new point based on its reward value.
+
+        Parameters:
+        - coefficients_list (list of lists): List of coefficients (a1, a2, a3) used to calculate the new point.
+        - rewards_list (list of torch.Tensor): List of reward tensors for each point.
+        """
+        logger.message(f"Plotting the triangle frame")
+        _plotting_start_time = time.time()
+        
+        # Generate the vertices of the equilateral triangle
+        triangle_vertices = np.array([[0, 0], [1, 0], [0.5, np.sqrt(3)/2]])
+
+        # Create trace for policy vertices
+        policy_vertices = go.Scatter(
+            x=[triangle_vertices[0, 0], triangle_vertices[1, 0], triangle_vertices[2, 0]],
+            y=[triangle_vertices[0, 1], triangle_vertices[1, 1], triangle_vertices[2, 1]],
+            mode="text",
+            text=["π1", "π2", "π3"],
+            textposition=["bottom center", "bottom center", "top center"],
+            textfont=dict(size=20),
+            showlegend=False,  # Set this to False to hide from legend
+        )
+
+        # Create trace for new points
+        _, rewards_list = zip(*alpha_reward_list)
+        # Convert Torch tensors to standard Python numbers
+        rewards_list = [reward.item() for reward in rewards_list]
+
+        min_reward = min(rewards_list)
+        max_reward = max(rewards_list)
+
+        # Create trace for new points with the updated colorbar attributes
+        new_points = []
+        for coeffs, reward in alpha_reward_list:
+            reward = reward.item()
+            new_point = np.dot(np.array(coeffs), triangle_vertices[:3])
+            hover_text = f"Reward: {reward:.2f}<br>Coordinates: ({new_point[0]:.2f}, {new_point[1]:.2f})<br>Alphas: {coeffs}"
+            new_points.append(go.Scatter(
+                x=[float(new_point[0])],
+                y=[float(new_point[1])],
+                mode="markers",
+                marker=dict(
+                    color=[reward],  # Enclose reward in a list to define its color based on the 'RdBu' scale
+                    size=10,
+                    colorbar=dict(
+                        title="Reward",
+                        tickvals=[min_reward, max_reward],
+                        ticktext=[f'{min_reward:.2f}', f'{max_reward:.2f}']
+                    ),
+                    colorscale="RdBu_r",  # Use the built-in Red-Blue color scale
+                    cmin=min_reward,  # Explicitly set the min for color scaling
+                    cmax=max_reward,  # Explicitly set the max for color scaling
+                    showscale=True  # Ensure that the colorscale is shown
+                ),
+                text=[hover_text],
+                hoverinfo='text',
+                showlegend=False,
+            ))
+
+        # Plot the best estimated policy
+        if "best_alphas" in info:
+            coeffs = info["best_alphas"][0]
+            best_point = get_point_from_alphas(np.array(coeffs.tolist()).reshape(1, -1), triangle_vertices)
+            reward = info["best_alphas_reward"]
+
+            hover_text = f"Reward: {reward:.2f}<br>Coordinates: ({best_point[0]:.2f}, {best_point[1]:.2f})<br>Alphas: {coeffs}"
+            new_points.append(go.Scatter(
+                x=[float(best_point[0])],
+                y=[float(best_point[1])],
+                mode="markers",
+                marker=dict(
+                    color="yellow",
+                    line=dict(width=0.5,
+                        color="DarkSlateGrey"),
+                    size=20,
+                    symbol="star",
+                ),
+                name="Best estimated policy",
+                text=[hover_text],
+                hoverinfo='text',
+                showlegend=True,
+            ))
+
+        # Create layout
+        layout = go.Layout(
+            title=f"{self.algorithm_name} Subspace Rewards for {self.env_name}",
+            xaxis=dict(title="X-axis", range=[-0.1, 1.1]),
+            yaxis=dict(title="Y-axis", range=[-0.1, 1.05]),
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01,
+            ),
+            plot_bgcolor="white",
+            showlegend=True
+        )
+
+        logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
+
+        fig = go.Figure(data=[policy_vertices] + new_points, layout=layout)
+        if show_figure:
+            fig.show()

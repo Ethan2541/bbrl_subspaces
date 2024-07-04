@@ -6,9 +6,9 @@ logger:
 
 subspace_algorithm:
       classname: bbrl_subspaces.algorithms.SAC
+      name: "SAC"
       params:
             save_best: False
-
             algorithm:
                   seed:
                         train: 335
@@ -18,7 +18,7 @@ subspace_algorithm:
                         torch: 789
                   n_envs: 8
                   n_steps_train: 32
-                  n_steps: 300_000
+                  n_steps: 20_000
                   eval_interval: 5000
                   nb_evals: 10
                   buffer_size: 1e6
@@ -51,7 +51,6 @@ subspace_algorithm:
                   input_dimension: nil
                   output_dimension: nil
                   start_steps: 0
-
                   n_initial_anchors: 3
                   dist_type: flat
                   refresh_rate: 1.
@@ -73,4 +72,7 @@ alpha_search:
 
 visualization:
       classname: bbrl_subspaces.visualization.SubspaceVisualizer
+      algorithm_name: ${subspace_algorithm.name}
+      env_name: ${subspace_algorithm.params.gym_env.env_name}
       num_points: 40
+      interactive: False
