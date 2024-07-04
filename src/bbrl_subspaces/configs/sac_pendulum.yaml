@@ -18,7 +18,7 @@ subspace_algorithm:
                         torch: 789
                   n_envs: 8
                   n_steps_train: 32
-                  n_steps: 20_000
+                  n_steps: 300_000
                   eval_interval: 5000
                   nb_evals: 10
                   buffer_size: 1e6
