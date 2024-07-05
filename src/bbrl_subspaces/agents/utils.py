@@ -137,7 +137,7 @@ class LinearSubspace(nn.Module):
         with torch.no_grad():
             # The policies should be pairwise distinct to prevent the subspace from collapsing
             for i in range(self.n_anchors):
-                for j in range(i+1,self.n_anchors):
+                for j in range(i+1, self.n_anchors):
                     w1 = self.anchors[i].weight
                     w2 = self.anchors[j].weight
                     p1 = ((w1 * w2).sum() / max(((w1**2).sum().sqrt() * (w2**2).sum().sqrt()), 1e-8))**2
@@ -146,7 +146,7 @@ class LinearSubspace(nn.Module):
                     b2 = self.anchors[j].bias
                     p2 = ((b1 * b2).sum() / max(((b1**2).sum().sqrt() * (b2**2).sum().sqrt()), 1e-8))**2
 
-                    cosine_similarities["θ" + str(i+1) + "θ" + str(i+2)] = (p1 + p2).item()
+                    cosine_similarities["θ" + str(i+1) + ", θ" + str(j+1)] = (p1 + p2).item()
         return cosine_similarities
 
 

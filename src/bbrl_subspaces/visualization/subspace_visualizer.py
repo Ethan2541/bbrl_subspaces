@@ -17,7 +17,7 @@ from .utils import evaluate_agent, find_axis_through_point, generate_left_edge_p
 
 
 class SubspaceVisualizer:
-    def __init__(self, algorithm_name, env_name, num_points, interactive=False, output_path="./figures/", **kwargs):
+    def __init__(self, algorithm_name, env_name, num_points, interactive, output_path="./figures/", **kwargs):
         self.algorithm_name = algorithm_name
         self.env_name = env_name
         self.is_interactive = interactive
@@ -27,7 +27,7 @@ class SubspaceVisualizer:
         self.output_path = output_path
 
 
-    def plot_subspace(self, eval_agent, logger, info={}, show_figure=False, save_figure=True):
+    def plot_subspace(self, eval_agent, logger, info={}):
         logger = logger.get_logger(type(self).__name__ + "/")
         logger.message("Preparing to plot the subspace")
 
@@ -85,13 +85,12 @@ class SubspaceVisualizer:
 
         # Plot the triangle with the points
         if self.is_interactive:
-            self.plot_interactive_triangle_with_multiple_points(alpha_reward_list, logger, info=info, show_figure=show_figure)
-        else:
-            self.plot_triangle_with_multiple_points(alpha_reward_list, logger, info=info, show_figure=show_figure, save_figure=save_figure)
+            self.plot_interactive_triangle_with_multiple_points(alpha_reward_list, logger, info=info)
+        self.plot_triangle_with_multiple_points(alpha_reward_list, logger, info=info)
 
 
 
-    def plot_triangle_with_multiple_points(self, alpha_reward_list, logger, info={}, show_figure=False, save_figure=True):
+    def plot_triangle_with_multiple_points(self, alpha_reward_list, logger, info={}):
         """
         Plot a triangle with vertices representing policies
 
@@ -99,7 +98,7 @@ class SubspaceVisualizer:
         - coefficients_list (list of lists): List of coefficients (a1, a2, a3) used to calculate the new point.
         - rewards_list (list of float): List of reward values for each point.
         """
-        logger.message(f"Plotting the triangle frame")
+        logger.message(f"Saving the subspace rewards figure")
         _plotting_start_time = time.time()
 
         # Plot the vertices of the equilateral triangle
@@ -131,7 +130,7 @@ class SubspaceVisualizer:
         # Plot the best estimated policy
         if "best_alphas" in info:
             best_point = get_point_from_alphas(np.array(info["best_alphas"][0].tolist()).reshape(1, -1), triangle_vertices)
-            plt.scatter(best_point[0], best_point[1], c="yellow", marker="*", edgecolors="black", linewidths=0.5, s=100, label="Best estimated policy")
+            plt.scatter(best_point[0], best_point[1], c="yellow", marker="*", edgecolors="black", linewidths=0.5, s=100, label=f"Best estimated policy (reward = {info['best_alphas_reward']:.2f})")
 
         # Set axis limits and labels
         plt.xlim(-0.1, 1.1)
@@ -146,20 +145,15 @@ class SubspaceVisualizer:
         plt.title(f"{self.algorithm_name} Subspace Rewards for {self.env_name}")
 
         # Then save the plot using the save_directory
-        if save_figure:
-            now = datetime.now()
-            date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
-            save_path = os.path.join(self.output_path, f"{self.env_name}_{self.algorithm_name}_Subspace_Rewards_{date_time}.png")
-            plt.savefig(save_path)
+        now = datetime.now()
+        date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
+        save_path = os.path.join(self.output_path, f"{self.env_name}_{self.algorithm_name}_Subspace_Rewards_{date_time}.png")
+        plt.savefig(save_path)
 
         logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
 
-        if show_figure:
-            plt.show()
 
-
-
-    def plot_interactive_triangle_with_multiple_points(self, alpha_reward_list, logger, info={}, show_figure=True):
+    def plot_interactive_triangle_with_multiple_points(self, alpha_reward_list, logger, info={}):
         """
         Plot a triangle with vertices representing policies and a new point calculated as a weighted sum of policies.
         Color the new point based on its reward value.
@@ -168,7 +162,7 @@ class SubspaceVisualizer:
         - coefficients_list (list of lists): List of coefficients (a1, a2, a3) used to calculate the new point.
         - rewards_list (list of torch.Tensor): List of reward tensors for each point.
         """
-        logger.message(f"Plotting the triangle frame")
+        logger.message(f"Plotting the interactive figure of the subspace rewards")
         _plotting_start_time = time.time()
         
         # Generate the vertices of the equilateral triangle
@@ -263,5 +257,4 @@ class SubspaceVisualizer:
         logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
 
         fig = go.Figure(data=[policy_vertices] + new_points, layout=layout)
-        if show_figure:
-            fig.show()
+        fig.show()

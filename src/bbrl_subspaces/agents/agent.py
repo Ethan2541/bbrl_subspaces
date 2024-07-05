@@ -18,9 +18,9 @@ class AlphaAgent(SubspaceAgent):
     ----------
     n_initial_anchors: number of policies that define the initial subspace
     dist_type: distribution used to sample the weights
-    refresh_rate: how short the time interval between two weights samplings should be
-    resampling_policy
-    repeat_alpha: number of steps a sampled alphas vector should be used
+    refresh_rate: proportion of the distributions that should be changed
+    resampling_policy: whether a new policy should be sampled to update the actor
+    repeat_alpha: number of consecutive steps a sampled alphas vector should be used
     """
 
     def __init__(self, n_initial_anchors, dist_type="flat", refresh_rate=1., resampling_policy=True, repeat_alpha=1000):
@@ -32,6 +32,8 @@ class AlphaAgent(SubspaceAgent):
         self.repeat_alpha = repeat_alpha
 
         self.dist = create_dist(self.dist_type, self.n_anchors)
+        # For the initial subspace, we still consider a "former" subspace that has one less anchor
+        # Without it, the performances of the overall subspace decrease drastically
         self.dist2 = create_dist("flat", self.n_anchors - 1)
 
         self.best_alpha = None
@@ -71,23 +73,28 @@ class AlphaAgent(SubspaceAgent):
 
         elif t is not None:
             B = self.workspace.batch_size()
-            # Sampling in the new subspace AND the former subspace
+            # Sampling in the new subspace and the former subspace
+            # Without using the former subspace, the chances to get a good policy are very low
             alphas1 = self.dist.sample(torch.Size([B // 2]))
             alphas2 = self.dist2.sample(torch.Size([B - (B // 2)]))
 
+            # Padding the former subspace sampled distribution
             if alphas2.shape[-1] < alphas1.shape[-1]:
-                alphas2 = torch.cat([alphas2,torch.zeros(*alphas2.shape[:-1],1)], dim=-1)
-            alphas = torch.cat([alphas1,alphas2], dim = 0)
+                alphas2 = torch.cat([alphas2, torch.zeros(*alphas2.shape[:-1], 1)], dim=-1)
+            alphas = torch.cat([alphas1, alphas2], dim=0)
 
             if isinstance(self.dist, Categorical):
-                alphas = F.one_hot(alphas,num_classes = self.n_anchors).float()
+                alphas = F.one_hot(alphas, num_classes=self.n_anchors).float()
 
-            # Change the sampled policy if necessary
+            # When an episode starts, a new distribution must be sampled
+            # Otherwise, the previous distribution can be used {repeat_alpha} times
             if t > 0 and self.repeat_alpha > 1:
                 done = self.get(("env/done", t)).float().unsqueeze(-1)
                 refresh_timestep = ((self.get(("env/timestep", t)) % self.repeat_alpha) == 0).float().unsqueeze(-1)
-                refresh = torch.max(done,refresh_timestep)
-                if ((done.sum() > 0) or (refresh_timestep.sum() > 0)) and (self.refresh_rate < 1.):
+                # Workspace examples where the distribution should be refreshed
+                refresh = torch.max(done, refresh_timestep)
+                # Refresh the distributions whose cumulated rewards are not in the top k
+                if (refresh.sum() > 0) and (self.refresh_rate < 1.):
                     alphas_cumulated_reward = self.get(("tracking_reward", t))
                     k = max(int(len(alphas_cumulated_reward) * (1 - self.refresh_rate)) - 1, 0)
                     threshold = sorted(alphas_cumulated_reward, reverse=True)[k]
@@ -244,10 +251,10 @@ class SubspaceAction(SubspaceAgent):
         for module in self.model:
             if isinstance(module, LinearSubspace):
                 module.add_anchor(alphas[i])
-                ### Sanity check
-                #if i == 0:
-                #    for j,anchor in enumerate(module.anchors):
-                #        print("--- anchor",j,":",anchor.weight[0].data[:4])
+                # ### Sanity check
+                # if i == 0:
+                #     for j,anchor in enumerate(module.anchors):
+                #         print("--- anchor",j,":",anchor.weight[0].data[:4])
                 i += 1
         self.n_anchors += 1
 

@@ -16,11 +16,10 @@ subspace_algorithm:
                         q: 123
                         explorer: 456
                         torch: 789
-
                   nb_seeds: 1
                   n_envs: 8
                   n_steps_train: 32
-                  n_steps: 300_000
+                  n_steps: 500_000
                   max_grad_norm: 0.5
                   buffer_size: 1e6
                   batch_size: 256
@@ -52,8 +51,8 @@ subspace_algorithm:
                   hidden_size: 64
                   input_dimension: nil
                   output_dimension: nil
-                  start_steps: 0
                   n_initial_anchors: 3
+                  start_steps: 0
                   dist_type: flat
                   refresh_rate: 1.
                   resampling_policy: False
