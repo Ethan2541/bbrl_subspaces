@@ -44,6 +44,12 @@ class SubspaceAgents(Agents):
             if cosine_similarities is not None:
                 return cosine_similarities
         return None
+    def euclidean_distances(self, **kwargs):
+        for agent in self:
+            euclidean_distances = agent.euclidean_distances()
+            if euclidean_distances is not None:
+                return euclidean_distances
+        return None
     def get_subspace_anchors(self, **kwargs):
         for agent in self:
             anchors = agent.get_subspace_anchors()
@@ -61,6 +67,8 @@ class SubspaceAgent(Agent):
     def set_best_alpha(self, **kwargs):
         pass
     def cosine_similarities(self, **kwargs):
+        return None
+    def euclidean_distances(self, **kwargs):
         return None
     def get_subspace_anchors(self, **kwargs):
         return None

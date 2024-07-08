@@ -296,6 +296,17 @@ class SubspaceAction(SubspaceAgent):
                     layers.append(copy.deepcopy(module))
             anchors[anchor_id] = Sequential(*layers)
         return anchors
+    
+
+    def euclidean_distances(self, **kwargs):
+        euclidean_distances = {}
+        anchors = self.get_subspace_anchors()
+        for i in range(self.n_anchors):
+            for j in range(i+1, self.n_anchors):
+                policy_i = torch.nn.utils.parameters_to_vector(anchors[i].parameters())
+                policy_j = torch.nn.utils.parameters_to_vector(anchors[j].parameters())
+                euclidean_distances[f"π{i+1}, π{j+1}"] = torch.norm(policy_i - policy_j, p=2).item()
+        return euclidean_distances
 
 
 

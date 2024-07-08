@@ -346,9 +346,11 @@ class SAC:
         logger.message("Training ended")
         logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")
 
-        logger.message("Cosine similarities of the anchors:")
+        logger.message("Similarities of the anchors:")
         for key, similarity in current_actor.agent.cosine_similarities().items():
             logger.message(f"\tcos({key}) = {round(similarity, 2)}")
+        for key, distance in current_actor.agent.euclidean_distances().items():
+            logger.message(f"\tL2({key}) = {round(distance, 2)}")
 
         info["replay_buffer"] = rb
         r = {"n_epochs": n_epochs, "training_time": time.time() - _training_start_time}

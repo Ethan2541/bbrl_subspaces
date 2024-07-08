@@ -6,8 +6,8 @@ hydra
 matplotlib
 numpy
 plotly
+python-ternary
 re
-ternary
 tk
 torch
 typing
