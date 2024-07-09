@@ -19,7 +19,7 @@ subspace_algorithm:
                   nb_seeds: 1
                   n_envs: 8
                   n_steps_train: 32
-                  n_steps: 20_000
+                  n_steps: 150_000
                   max_grad_norm: 0.5
                   buffer_size: 1e6
                   batch_size: 256
@@ -67,8 +67,9 @@ subspace_algorithm:
 
 alpha_search:
       classname: bbrl_subspaces.algorithms.AlphaSearch
-      n_estimations: 1024
       n_rollouts: 32
+      n_samples: 1024
+      n_validation_steps: 200
       seed: 0
 
 visualization:
@@ -77,3 +78,4 @@ visualization:
       env_name: ${subspace_algorithm.params.gym_env.env_name}
       num_points: 40
       interactive: False
+      thresholds: []

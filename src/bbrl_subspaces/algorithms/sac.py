@@ -188,7 +188,7 @@ class SAC:
         return actor_loss.mean()
 
 
-    def run(self, train_env_agent, eval_env_agent, logger, info={}):
+    def run(self, train_env_agent, eval_env_agent, logger, info={}, visualizer=None):
         torch.random.manual_seed(seed=self.cfg.algorithm.seed.torch)
         bbrl_logger = Logger(logger)
         logger = logger.get_logger(type(self).__name__ + "/")
@@ -343,15 +343,16 @@ class SAC:
                         actor, self.cfg.env_name, mean, "./sac_best_agents/", "sac"
                     )
 
+                if visualizer is not None:
+                    info["anchors_similarities"] = current_actor.agent.get_similarities()
+                    visualizer.plot_subspace(
+                        TemporalAgent(Agents(copy.deepcopy(eval_env_agent), copy.deepcopy(actor))), logger, info, nb_steps
+                    )
+
         logger.message("Training ended")
         logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")
 
-        logger.message("Similarities of the anchors:")
-        for key, similarity in current_actor.agent.cosine_similarities().items():
-            logger.message(f"\tcos({key}) = {round(similarity, 2)}")
-        for key, distance in current_actor.agent.euclidean_distances().items():
-            logger.message(f"\tL2({key}) = {round(distance, 2)}")
-
+        info["anchors_similarities"] = current_actor.agent.get_similarities()
         info["replay_buffer"] = rb
         r = {"n_epochs": n_epochs, "training_time": time.time() - _training_start_time}
 

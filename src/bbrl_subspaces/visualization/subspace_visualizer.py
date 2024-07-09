@@ -17,19 +17,29 @@ from .utils import evaluate_agent, find_axis_through_point, generate_left_edge_p
 
 
 class SubspaceVisualizer:
-    def __init__(self, algorithm_name, env_name, num_points, interactive, output_path="./figures/", **kwargs):
+    def __init__(self, algorithm_name, env_name, num_points, interactive, thresholds, output_path="./figures/", **kwargs):
         self.algorithm_name = algorithm_name
         self.env_name = env_name
         self.is_interactive = interactive
         self.num_points = num_points
+        self.thresholds = thresholds
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         self.output_path = output_path
 
 
-    def plot_subspace(self, eval_agent, logger, info={}):
+    def plot_subspace(self, eval_agent, logger, info={}, n_steps=None, **kwargs):
+        # If the number of steps is specified, only plot on thresholds
+        if n_steps is not None:
+            if (len(self.thresholds) == 0) or (n_steps < self.thresholds[0]):
+                return
+            else:
+                del self.thresholds[0]
+
         logger = logger.get_logger(type(self).__name__ + "/")
-        logger.message("Preparing to plot the subspace")
+
+        message_steps_str = f" at step {n_steps:,d}" if n_steps is not None else ""
+        logger.message(f"Preparing to plot the subspace" + message_steps_str)
 
         # Compute alphas and rewards
         points_left = generate_left_edge_points(self.num_points)
@@ -78,19 +88,16 @@ class SubspaceVisualizer:
                     alpha_reward_list.append((alpha, reward))
                     cpt += 1
 
-        if "best_alphas" in info:
-            info["best_alphas_reward"] = evaluate_agent(eval_agent, info["best_alphas"][0])
-
         logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
 
         # Plot the triangle with the points
         if self.is_interactive:
-            self.plot_interactive_triangle_with_multiple_points(alpha_reward_list, logger, info=info)
-        self.plot_triangle_with_multiple_points(alpha_reward_list, logger, info=info)
+            self.plot_interactive_triangle_with_multiple_points(alpha_reward_list, logger, info=info, n_steps=n_steps)
+        self.plot_triangle_with_multiple_points(alpha_reward_list, logger, info=info, n_steps=n_steps)
 
 
 
-    def plot_triangle_with_multiple_points(self, alpha_reward_list, logger, info={}):
+    def plot_triangle_with_multiple_points(self, alpha_reward_list, logger, info={}, n_steps=None, **kwargs):
         """
         Plot a triangle with vertices representing policies
 
@@ -104,11 +111,16 @@ class SubspaceVisualizer:
         # Plot the vertices of the equilateral triangle
         triangle_vertices = np.array([[0, 0], [1, 0], [0.5, np.sqrt(3)/2]])
 
+        fig = plt.figure(figsize=(9, 7))
+
         # Plot policy vertices
         # π1 is the first anchor of the subspace, π2 is the second anchor, and π3 the third one
         plt.text(triangle_vertices[0, 0] - 0.06, triangle_vertices[0, 1] - 0.04, "π1", fontsize=10)
         plt.text(triangle_vertices[1, 0] + 0.01, triangle_vertices[1, 1] - 0.04, "π2", fontsize=10)
         plt.text(triangle_vertices[2, 0] - 0.02, triangle_vertices[2, 1] + 0.02, "π3", fontsize=10)
+
+        # Display the similarities of the anchors
+        plt.text(-0.05, 0.75, info["anchors_similarities"], fontsize=10)
 
         # norm = mcolors.Normalize(vmin=0, vmax=500) #TO TO HAVE THE VALUES FROM 0 TO 500
         _, rewards_list = zip(*alpha_reward_list)
@@ -125,12 +137,12 @@ class SubspaceVisualizer:
             new_point = np.dot(np.array(coeffs), triangle_vertices[:3])
             # jitter = np.random.normal(0, 0.01, 2)  # Add a small random jitter to avoid superposition
             # plt.scatter(new_point[0] + jitter[0], new_point[1] + jitter[1], c=reward, cmap=cmap, norm=norm, alpha=0.5, s=250)
-            plt.scatter(new_point[0], new_point[1], c=reward, cmap=cmap, norm=norm, s=45)
+            plt.scatter(new_point[0], new_point[1], c=reward, cmap=cmap, norm=norm, s=75)
 
         # Plot the best estimated policy
-        if "best_alphas" in info:
-            best_point = get_point_from_alphas(np.array(info["best_alphas"][0].tolist()).reshape(1, -1), triangle_vertices)
-            plt.scatter(best_point[0], best_point[1], c="yellow", marker="*", edgecolors="black", linewidths=0.5, s=100, label=f"Best estimated policy (reward = {info['best_alphas_reward']:.2f})")
+        if ("best_alpha" in info) and (info["best_alpha"] is not None):
+            best_point = get_point_from_alphas(np.array(info["best_alpha"].tolist()).reshape(1, -1), triangle_vertices)
+            plt.scatter(best_point[0], best_point[1], c="yellow", marker="*", edgecolors="black", linewidths=0.5, s=150, label=f"Best estimated policy (reward = {info['best_alpha_reward']:.2f})")
 
         # Set axis limits and labels
         plt.xlim(-0.1, 1.1)
@@ -141,19 +153,24 @@ class SubspaceVisualizer:
         cbar.set_label('Reward')
 
         # Add legend
-        plt.legend(loc="upper right")
-        plt.title(f"{self.algorithm_name} Subspace Rewards for {self.env_name}")
+        if n_steps is None:
+            plt.legend(loc="upper right")
+
+        title_steps_str = f" at step {n_steps:,d}" if n_steps is not None else ""
+        plt.title(f"{self.algorithm_name} Subspace Rewards for {self.env_name}" + title_steps_str)
 
         # Then save the plot using the save_directory
         now = datetime.now()
         date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
-        save_path = os.path.join(self.output_path, f"{self.env_name}_{self.algorithm_name}_Subspace_Rewards_{date_time}.png")
+
+        save_path_steps_str = f"_step_{n_steps:,d}" if n_steps is not None else ""
+        save_path = os.path.join(self.output_path, f"{self.env_name}_{self.algorithm_name}_Subspace_Rewards_{date_time}" + save_path_steps_str + ".png")
         plt.savefig(save_path)
 
         logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
 
 
-    def plot_interactive_triangle_with_multiple_points(self, alpha_reward_list, logger, info={}):
+    def plot_interactive_triangle_with_multiple_points(self, alpha_reward_list, logger, info={}, **kwargs):
         """
         Plot a triangle with vertices representing policies and a new point calculated as a weighted sum of policies.
         Color the new point based on its reward value.
@@ -216,10 +233,10 @@ class SubspaceVisualizer:
             ))
 
         # Plot the best estimated policy
-        if "best_alphas" in info:
-            coeffs = info["best_alphas"][0]
+        if ("best_alpha" in info) and (info["best_alpha"] is not None):
+            coeffs = info["best_alpha"]
             best_point = get_point_from_alphas(np.array(coeffs.tolist()).reshape(1, -1), triangle_vertices)
-            reward = info["best_alphas_reward"]
+            reward = info["best_alpha_reward"]
 
             hover_text = f"Reward: {reward:.2f}<br>Coordinates: ({best_point[0]:.2f}, {best_point[1]:.2f})<br>Alphas: {coeffs}"
             new_points.append(go.Scatter(

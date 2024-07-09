@@ -307,7 +307,16 @@ class SubspaceAction(SubspaceAgent):
                 policy_j = torch.nn.utils.parameters_to_vector(anchors[j].parameters())
                 euclidean_distances[f"π{i+1}, π{j+1}"] = torch.norm(policy_i - policy_j, p=2).item()
         return euclidean_distances
+    
 
+    def get_similarities(self, **kwargs):
+        similarities = "Similarities of the anchors:"
+        for key, similarity in self.cosine_similarities().items():
+            similarities += f"\ncos({key}) = {round(similarity, 2)}"
+        for key, distance in self.euclidean_distances().items():
+            similarities += f"\nL2({key}) = {round(distance, 2)}"
+        return similarities
+    
 
 
 class AlphaCritic(SubspaceAgent):

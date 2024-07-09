@@ -1,6 +1,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 #
+import bbrl_gymnasium
 import copy
 import os
 import torch
@@ -8,9 +9,15 @@ import torch.nn as nn
 
 from torch.distributions.categorical import Categorical
 from torch.distributions.dirichlet import Dirichlet
+from functools import partial
 
 from bbrl.agents import Agents
 from bbrl.agents.agent import Agent
+from bbrl import get_class
+from bbrl.agents.gymnasium import ParallelGymAgent, make_env
+
+
+assets_path = os.getcwd() + "/../../assets/"
 
 
 # Creation of distributions for sampling the policies (alphas)
@@ -25,6 +32,62 @@ def create_dist(dist_type, n_anchors):
     elif dist_type == "last_anchor":
         dist = Categorical(torch.Tensor([0] * (n_anchors-1) + [1]))
     return dist
+
+
+
+def get_env_agents(cfg, *, autoreset=True, include_last_state=True, alpha_search=False):
+    # Returns a pair of environments (train / evaluation) based on a configuration `cfg`
+    # Returns an additional environment to estimate the best sampled distribution of a subspace if alpha_search is True
+
+    if "xml_file" in cfg.subspace_algorithm.params.gym_env.keys():
+        xml_file = assets_path + cfg.subspace_algorithm.params.gym_env.xml_file
+        print("loading:", xml_file)
+    else:
+        xml_file = None
+
+    if "wrappers" in cfg.subspace_algorithm.params.gym_env.keys():
+        print("using wrappers:", cfg.gym_env.wrappers)
+        # wrappers_name_list = cfg.gym_env.wrappers.split(',')
+        wrappers_list = []
+        wr = get_class(cfg.subspace_algorithm.params.gym_env.wrappers)
+        # for i in range(len(wrappers_name_list)):
+        wrappers_list.append(wr)
+        wrappers = wrappers_list
+        print(wrappers)
+    else:
+        wrappers = []
+
+    # Train environment
+    train_env_agent = ParallelGymAgent(
+        partial(
+            make_env, cfg.subspace_algorithm.params.gym_env.env_name, autoreset=autoreset, wrappers=wrappers
+        ),
+        cfg.subspace_algorithm.params.algorithm.n_envs,
+        include_last_state=include_last_state,
+        seed=cfg.subspace_algorithm.params.algorithm.seed.train,
+    )
+
+    # Test environment (implictly, autoreset=False, which is always the case for evaluation environments)
+    eval_env_agent = ParallelGymAgent(
+        partial(make_env, cfg.subspace_algorithm.params.gym_env.env_name, wrappers=wrappers),
+        cfg.subspace_algorithm.params.algorithm.nb_evals,
+        include_last_state=include_last_state,
+        seed=cfg.subspace_algorithm.params.algorithm.seed.eval,
+    )
+
+    # Test environment to estimate the best sampled distribution of a subspace
+    if alpha_search:
+        alpha_env_agent = ParallelGymAgent(
+            partial(make_env, cfg.subspace_algorithm.params.gym_env.env_name, wrappers=wrappers),
+            cfg.alpha_search.n_rollouts,
+            include_last_state=include_last_state,
+            seed=cfg.alpha_search.seed,
+        )
+
+    if alpha_search:
+        return train_env_agent, eval_env_agent, alpha_env_agent
+    else:
+        return train_env_agent, eval_env_agent
 
 
 
@@ -50,6 +113,12 @@ class SubspaceAgents(Agents):
             if euclidean_distances is not None:
                 return euclidean_distances
         return None
+    def get_similarities(self):
+        for agent in self:
+            similarities = agent.get_similarities()
+            if similarities is not None:
+                return similarities
+        return None
     def get_subspace_anchors(self, **kwargs):
         for agent in self:
             anchors = agent.get_subspace_anchors()
@@ -69,6 +138,8 @@ class SubspaceAgent(Agent):
     def cosine_similarities(self, **kwargs):
         return None
     def euclidean_distances(self, **kwargs):
+        return None
+    def get_similarities(self, **kwargs):
         return None
     def get_subspace_anchors(self, **kwargs):
         return None

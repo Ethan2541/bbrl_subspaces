@@ -9,6 +9,7 @@ subspace_algorithm:
       name: "SAC"
       params:
             save_best: False
+            visualization_steps: [100_000, 300_000, 500_000]
             algorithm:
                   seed:
                         train: 335
@@ -66,8 +67,9 @@ subspace_algorithm:
 
 alpha_search:
       classname: bbrl_subspaces.algorithms.AlphaSearch
-      n_estimations: 1024
       n_rollouts: 32
+      n_samples: 1024
+      n_validation_steps: 200
       seed: 0
 
 visualization:
