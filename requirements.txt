@@ -2,6 +2,7 @@ bbrl
 bbrl_algos
 copy
 functools
+gymnasium[mujoco]
 hydra
 matplotlib
 numpy

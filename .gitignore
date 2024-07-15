@@ -2,6 +2,7 @@ __pycache__
 
 src/bbrl_subspaces/figures
 src/bbrl_subspaces/outputs
+src/bbrl_subspaces/sac_best_agents
 src/bbrl_subspaces/sac_logs
 
 src/bbrl_subspaces/_version.py

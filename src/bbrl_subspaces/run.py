@@ -12,8 +12,11 @@ from bbrl_subspaces.agents.utils import get_env_agents
 
 @hydra.main(
     config_path="./configs/",
-    config_name="sac_cartpole.yaml",
-    # config_name="sac_pendulum.yaml",
+    config_name="cartpole.yaml",
+    # config_name="lunar_lander.yaml",
+    # config_name="pendulum.yaml",
+    # config_name="rocket_lander.yaml",
+    # config_name="swimmer.yaml",
     version_base="1.3",
 )
 def main(cfg):

@@ -47,7 +47,7 @@ class AlphaSearch:
             alphas = torch.stack([alphas for _ in range(2)], dim=0)
             values = []
 
-            # Get a list of n_estimations elements, which are Q-values tensors of size n_rollouts
+            # Get a list of n_samples elements, which are Q-values tensors of size n_rollouts
             logger.message("Starting value estimation in the current subspace")
             _training_start_time = time.time()
             for _ in range(self.n_samples):
@@ -74,7 +74,7 @@ class AlphaSearch:
             alphas = torch.stack([alphas for _ in range(2)], dim=0)
             values = []
             
-            # Get a list of n_estimations elements, which are Q-values tensors of size n_rollouts
+            # Get a list of n_samples elements, which are Q-values tensors of size n_rollouts
             logger.message("Starting value estimation in the former subspace")
             _training_start_time = time.time()
             for _ in range(self.n_samples):

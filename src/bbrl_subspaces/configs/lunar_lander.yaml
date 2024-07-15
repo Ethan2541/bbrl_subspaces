@@ -9,17 +9,16 @@ subspace_algorithm:
       name: "SAC"
       params:
             save_best: False
-            visualization_steps: [100_000, 300_000, 500_000]
             algorithm:
                   seed:
-                        train: 335
-                        eval: 983
+                        train: 1
+                        eval: 99
                         q: 123
                         explorer: 456
-                        torch: 789
-                  n_envs: 8
-                  n_steps_train: 32
-                  n_steps: 500_000
+                        torch: 7
+                  n_envs: 10
+                  n_steps_train: 50
+                  n_steps: 2_000_000
                   eval_interval: 5000
                   nb_evals: 10
                   buffer_size: 1e6
@@ -32,7 +31,7 @@ subspace_algorithm:
                   init_entropy_coef: 2e-7
 
             gym_env:
-                  env_name: Pendulum-v1
+                  env_name: LunarLanderContinuous-v2
 
             actor_optimizer:
                   classname: torch.optim.Adam
@@ -48,7 +47,7 @@ subspace_algorithm:
 
             policy_agent:
                   classname: bbrl_subspaces.agents.SubspaceActionAgent
-                  hidden_size: 32
+                  hidden_size: 256
                   input_dimension: nil
                   output_dimension: nil
                   n_initial_anchors: 3
@@ -60,7 +59,7 @@ subspace_algorithm:
 
             critic_agent:
                   classname: bbrl_subspaces.agents.AlphaCritic
-                  hidden_size: 256
+                  hidden_size: 512
                   obs_dimension: nil
                   action_dimension: nil
                   n_anchors: ${subspace_algorithm.params.policy_agent.n_initial_anchors}
@@ -78,3 +77,4 @@ visualization:
       env_name: ${subspace_algorithm.params.gym_env.env_name}
       num_points: 40
       interactive: False
+      thresholds: [100_000, 300_000, 500_000]
