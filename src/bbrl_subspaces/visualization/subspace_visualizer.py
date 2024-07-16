@@ -29,14 +29,19 @@ class SubspaceVisualizer:
 
 
     def plot_subspace(self, eval_agent, logger, info={}, n_steps=None, **kwargs):
+        logger = logger.get_logger(type(self).__name__ + "/")
+
+        n_subspace_anchors = eval_agent.agent.agents[1][0].n_anchors
+        if n_subspace_anchors != 3:
+            logger.message(f"Can't visualize the subspace, as it does not have exactly 3 different anchors: it currently has {n_subspace_anchors} anchors)")
+            return
+        
         # If the number of steps is specified, only plot on thresholds
         if n_steps is not None:
             if (len(self.thresholds) == 0) or (n_steps < self.thresholds[0]):
                 return
             else:
                 del self.thresholds[0]
-
-        logger = logger.get_logger(type(self).__name__ + "/")
 
         message_steps_str = f" at step {n_steps:,d}" if n_steps is not None else ""
         logger.message(f"Preparing to plot the subspace" + message_steps_str)

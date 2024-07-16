@@ -118,10 +118,11 @@ class AlphaAgent(SubspaceAgent):
 
 
     def set_best_alpha(self, alpha=None, logger=None, **kwargs):
-        # The last policy added as an anchor is the best if alpha is None
+        # The last policy added as an anchor is the best, if alpha is None
         if alpha is None:
             alpha = torch.Tensor([0.] * (self.n_anchors - 1) + [1.])
 
+        self.best_alpha = alpha
         self.best_alphas = torch.cat([self.best_alphas, alpha.unsqueeze(0)], dim=0)
 
         if logger is not None:
@@ -144,6 +145,7 @@ class AlphaAgent(SubspaceAgent):
 
     def remove_anchor(self, logger = None,**kwargs):
         self.n_anchors -= 1
+        self.best_alpha = self.best_alpha[:-1]
         self.best_alphas = self.best_alphas[:,:-1]
         self.dist = create_dist(self.dist_type, self.n_anchors)
         self.dist2 = create_dist("flat", self.n_anchors-1)

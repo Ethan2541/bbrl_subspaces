@@ -1,18 +1,25 @@
 import typing as tp
 
-from omegaconf import OmegaConf
+from omegaconf import open_dict
 
-from bbrl_cl.core import Scenario, Task
+from .core import Scenario, Task
 
 configs_path = "../../../../configs/"
 
 class GymScenario(Scenario):
-    def __init__(self, domain, tasks, tasks_cfgs, repeat_scenario, **kwargs):
+    def __init__(self, domain, repeat_scenario, tasks, base_env, **kwargs):
         super().__init__()
         tasks = list(tasks) * repeat_scenario
         print("Domain:", domain)
         print("Scenario:", tasks)
-        for k, task_path in enumerate(tasks_cfgs):
-            task_cfg = OmegaConf.load(configs_path + task_path)
-            self._train_tasks.append(Task(task_cfg.training, k, True))
-            self._test_tasks.append(Task(task_cfg.test, k, False))
+        for k, task in enumerate(tasks):
+            with open_dict(base_env):
+                base_env.xml_file = self.get_xml_from_task(task)
+            self._train_tasks.append(Task(base_env, k))
+            self._test_tasks.append(Task(base_env, k))
+
+    
+    def get_xml_from_task(self, task):
+        match task:
+            case "normal":
+                return None

@@ -7,8 +7,6 @@ import bbrl
 import torch
 import torch.utils.data
 from bbrl.agents.gymnasium import GymAgent
-from bbrl.workspace import Workspace
-from bbrl.agents import Agents, TemporalAgent
 
 from bbrl_subspaces.agents.utils import get_env_agents
 
@@ -26,13 +24,11 @@ class Task:
 
     def __init__(self,env_agent_cfg: dict,
                       task_id: int,
-                      is_training_task,
                       input_dimension: tp.Union[None,int] = None,
                       output_dimension: tp.Union[None,int] = None,
-                      )  -> None:
+                      ) -> None:
         self._task_id = task_id
         self._env_agent_cfg = env_agent_cfg
-        self._is_training_task = is_training_task
 
         if input_dimension is None or output_dimension is None:
             env = self.make()[1]
@@ -96,9 +92,8 @@ class Framework:
     params : The OmegaConf (or dict) that allows to configure the model
     """
 
-    def __init__(self,seed: int,params: dict) -> None:
+    def __init__(self, seed: int) -> None:
         self.seed = seed
-        self.cfg = params
         self._stage = 0
 
 

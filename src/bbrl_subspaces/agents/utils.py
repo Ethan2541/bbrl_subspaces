@@ -16,7 +16,6 @@ from bbrl.agents.agent import Agent
 from bbrl import get_class
 from bbrl.agents.gymnasium import ParallelGymAgent, make_env
 
-
 assets_path = os.getcwd() + "/../../assets/"
 
 
@@ -38,18 +37,18 @@ def create_dist(dist_type, n_anchors):
 def get_env_agents(cfg, *, autoreset=True, include_last_state=True, alpha_search=False):
     # Returns a pair of environments (train / evaluation) based on a configuration `cfg`
     # Returns an additional environment to estimate the best sampled distribution of a subspace if alpha_search is True
-
-    if "xml_file" in cfg.subspace_algorithm.params.gym_env.keys():
-        xml_file = assets_path + cfg.subspace_algorithm.params.gym_env.xml_file
+    
+    if "xml_file" in cfg.keys() and cfg.xml_file is not None:
+        xml_file = assets_path + cfg.xml_file
         print("loading:", xml_file)
     else:
         xml_file = None
 
-    if "wrappers" in cfg.subspace_algorithm.params.gym_env.keys():
-        print("using wrappers:", cfg.gym_env.wrappers)
+    if "wrappers" in cfg.keys():
+        print("using wrappers:", cfg.wrappers)
         # wrappers_name_list = cfg.gym_env.wrappers.split(',')
         wrappers_list = []
-        wr = get_class(cfg.subspace_algorithm.params.gym_env.wrappers)
+        wr = get_class(cfg.wrappers)
         # for i in range(len(wrappers_name_list)):
         wrappers_list.append(wr)
         wrappers = wrappers_list
@@ -60,28 +59,28 @@ def get_env_agents(cfg, *, autoreset=True, include_last_state=True, alpha_search
     # Train environment
     train_env_agent = ParallelGymAgent(
         partial(
-            make_env, cfg.subspace_algorithm.params.gym_env.env_name, autoreset=autoreset, wrappers=wrappers
+            make_env, cfg.env_name, autoreset=autoreset, wrappers=wrappers
         ),
-        cfg.subspace_algorithm.params.algorithm.n_envs,
+        cfg.n_envs,
         include_last_state=include_last_state,
-        seed=cfg.subspace_algorithm.params.algorithm.seed.train,
+        seed=cfg.seed.train,
     )
 
     # Test environment (implictly, autoreset=False, which is always the case for evaluation environments)
     eval_env_agent = ParallelGymAgent(
-        partial(make_env, cfg.subspace_algorithm.params.gym_env.env_name, wrappers=wrappers),
-        cfg.subspace_algorithm.params.algorithm.nb_evals,
+        partial(make_env, cfg.env_name, wrappers=wrappers),
+        cfg.nb_evals,
         include_last_state=include_last_state,
-        seed=cfg.subspace_algorithm.params.algorithm.seed.eval,
+        seed=cfg.seed.eval,
     )
 
     # Test environment to estimate the best sampled distribution of a subspace
     if alpha_search:
         alpha_env_agent = ParallelGymAgent(
-            partial(make_env, cfg.subspace_algorithm.params.gym_env.env_name, wrappers=wrappers),
-            cfg.alpha_search.n_rollouts,
+            partial(make_env, cfg.env_name, wrappers=wrappers),
+            cfg.n_rollouts,
             include_last_state=include_last_state,
-            seed=cfg.alpha_search.seed,
+            seed=cfg.seed.alpha_search,
         )
 
     if alpha_search:
@@ -101,6 +100,9 @@ class SubspaceAgents(Agents):
     def set_best_alpha(self, **kwargs):
         for agent in self:
             agent.set_best_alpha(**kwargs)
+    def set_task(self, task_id=None, **kwargs):
+        for agent in self:
+            agent.set_task(task_id)
     def cosine_similarities(self):
         for agent in self:
             cosine_similarities = agent.cosine_similarities()
@@ -135,6 +137,8 @@ class SubspaceAgent(Agent):
         pass
     def set_best_alpha(self, **kwargs):
         pass
+    def set_task(self, task_id=None, **kwargs):
+        pass
     def cosine_similarities(self, **kwargs):
         return None
     def euclidean_distances(self, **kwargs):
@@ -146,7 +150,7 @@ class SubspaceAgent(Agent):
 
 
 
-# Layer of a group of policies
+# Layer for a group of policies
 class LinearSubspace(nn.Module):
     def __init__(self, n_anchors, in_channels, out_channels, bias = True, same_init = False, freeze_anchors = True):
         super().__init__()
@@ -158,7 +162,7 @@ class LinearSubspace(nn.Module):
 
         # Same weights for every anchor
         if same_init:
-            anchor = nn.Linear(in_channels,out_channels,bias = self.is_bias)
+            anchor = nn.Linear(in_channels, out_channels, bias=self.is_bias)
             anchors = [copy.deepcopy(anchor) for _ in range(n_anchors)]
         # Random weights
         else:

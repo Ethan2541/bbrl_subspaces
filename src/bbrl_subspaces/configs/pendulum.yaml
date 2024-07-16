@@ -4,7 +4,7 @@ logger:
       verbose: False
       every_n_seconds: 10
 
-subspace_algorithm:
+train_algorithm:
       classname: bbrl_subspaces.algorithms.SAC
       name: "SAC"
       params:
@@ -18,7 +18,7 @@ subspace_algorithm:
                         torch: 789
                   n_envs: 8
                   n_steps_train: 32
-                  n_steps: 500_000
+                  n_steps: 1_000_000
                   eval_interval: 5000
                   nb_evals: 10
                   buffer_size: 1e6
@@ -62,7 +62,7 @@ subspace_algorithm:
                   hidden_size: 256
                   obs_dimension: nil
                   action_dimension: nil
-                  n_anchors: ${subspace_algorithm.params.policy_agent.n_initial_anchors}
+                  n_anchors: ${train_algorithm.params.policy_agent.n_initial_anchors}
 
 alpha_search:
       classname: bbrl_subspaces.algorithms.AlphaSearch
@@ -73,8 +73,8 @@ alpha_search:
 
 visualization:
       classname: bbrl_subspaces.visualization.SubspaceVisualizer
-      algorithm_name: ${subspace_algorithm.name}
-      env_name: ${subspace_algorithm.params.gym_env.env_name}
+      algorithm_name: ${train_algorithm.name}
+      env_name: ${train_algorithm.params.gym_env.env_name}
       num_points: 40
       interactive: False
-      thresholds: [100_000, 300_000, 500_000]
+      thresholds: [100_000, 300_000, 500_000, 700_000, 900_000]
