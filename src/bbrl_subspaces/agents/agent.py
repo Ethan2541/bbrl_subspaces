@@ -135,6 +135,7 @@ class AlphaAgent(SubspaceAgent):
 
     def add_anchor(self, logger = None,**kwargs):
         self.n_anchors += 1
+        self.best_alpha = torch.cat([self.best_alpha, torch.zeros(1)], dim=-1)
         self.best_alphas = torch.cat([self.best_alphas, torch.zeros(self.best_alphas.shape[0], 1)], dim=-1)
         self.dist = create_dist(self.dist_type, self.n_anchors)
         self.dist2 = create_dist("flat", self.n_anchors-1)

@@ -19,12 +19,14 @@ class Subspace(Framework):
 
     def __init__(self, seed, train_algorithm, alpha_search, evaluation, visualization):
         super().__init__(seed)
+        torch.manual_seed(self.seed)
         self.train_algorithm = instantiate_class(train_algorithm)
         self.alpha_search = instantiate_class(alpha_search)
         self.evaluation_cfg = evaluation
         self.visualizer = instantiate_class(visualization)
         self.policy_agent = None
-        self.critic_agent = None
+        self.critic_agent_1 = None
+        self.critic_agent_2 = None
 
 
     def _train(self, task, logger):
@@ -32,28 +34,29 @@ class Subspace(Framework):
         info = {"task_id": task_id}
         if task_id > 0:
             self.policy_agent.add_anchor(logger=logger)
-            self.critic_agent.add_anchor(n_anchors=self.policy_agent[0].n_anchors, logger=logger)
+            self.critic_agent_1.add_anchor(n_anchors=self.policy_agent[0].n_anchors, logger=logger)
+            self.critic_agent_2.add_anchor(n_anchors=self.policy_agent[0].n_anchors, logger=logger)
 
         train_env_agent, eval_env_agent, alpha_env_agent = task.make()
-        r1, self.policy_agent, self.critic_agent, info = self.train_algorithm.run(train_env_agent, eval_env_agent, logger, visualizer=self.visualizer)
-        r2, self.policy_agent, self.critic_agent, info = self.alpha_search.run(alpha_env_agent, self.policy_agent, self.critic_agent, logger, info)
-        self.visualizer.plot_subspace(TemporalAgent(Agents(eval_env_agent, copy.deepcopy(self.policy_agent))), logger, info)
+        r1, self.policy_agent, self.critic_agent_1, self.critic_agent_2, info = self.train_algorithm.run(train_env_agent, eval_env_agent, self.policy_agent, self.critic_agent_1, self.critic_agent_2, logger, visualizer=self.visualizer)
+        r2, self.policy_agent, self.critic_agent_1, info = self.alpha_search.run(alpha_env_agent, self.policy_agent, self.critic_agent_1, logger, info)
+        self.visualizer.plot_subspace(TemporalAgent(Agents(eval_env_agent, self.policy_agent)), logger, info)
         return r1
 
 
     def memory_size(self):
         pytorch_total_params = sum(p.numel() for p in self.policy_agent.parameters())
-        return {"n_parameters":pytorch_total_params}
+        return {"n_parameters": pytorch_total_params}
 
 
     def get_evaluation_agent(self, task_id):
         self.policy_agent.set_task(task_id)
-        return copy.deepcopy(self.policy_agent), copy.deepcopy(self.critic_agent)
+        return copy.deepcopy(self.policy_agent)
 
 
     def _evaluate_single_task(self, task):
         _, env_agent, _ = task.make()
-        actor, _ = self.get_evaluation_agent(task.task_id())
+        actor = self.get_evaluation_agent(task.task_id())
         actor.eval()
         eval_agent = TemporalAgent(Agents(env_agent, actor))
 

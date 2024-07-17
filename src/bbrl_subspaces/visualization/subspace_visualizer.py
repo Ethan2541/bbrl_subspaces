@@ -29,19 +29,19 @@ class SubspaceVisualizer:
 
 
     def plot_subspace(self, eval_agent, logger, info={}, n_steps=None, **kwargs):
-        logger = logger.get_logger(type(self).__name__ + "/")
-
-        n_subspace_anchors = eval_agent.agent.agents[1][0].n_anchors
-        if n_subspace_anchors != 3:
-            logger.message(f"Can't visualize the subspace, as it does not have exactly 3 different anchors: it currently has {n_subspace_anchors} anchors)")
-            return
-        
         # If the number of steps is specified, only plot on thresholds
         if n_steps is not None:
             if (len(self.thresholds) == 0) or (n_steps < self.thresholds[0]):
                 return
             else:
                 del self.thresholds[0]
+
+        logger = logger.get_logger(type(self).__name__ + "/")
+
+        n_subspace_anchors = eval_agent.agent.agents[1][0].n_anchors
+        if n_subspace_anchors != 3:
+            logger.message(f"Can't visualize the subspace, as it does not have exactly 3 different anchors: it currently has {n_subspace_anchors} anchors)")
+            return
 
         message_steps_str = f" at step {n_steps:,d}" if n_steps is not None else ""
         logger.message(f"Preparing to plot the subspace" + message_steps_str)
@@ -127,12 +127,13 @@ class SubspaceVisualizer:
         # Display the similarities of the anchors
         plt.text(-0.05, 0.75, info["anchors_similarities"], fontsize=10)
 
-        # norm = mcolors.Normalize(vmin=0, vmax=500) #TO TO HAVE THE VALUES FROM 0 TO 500
-        _, rewards_list = zip(*alpha_reward_list)
-
         # Normalize rewards for colormap
+        _, rewards_list = zip(*alpha_reward_list)
         norm = plt.Normalize(vmin=min(rewards_list), vmax=max(rewards_list))
         norm = mcolors.Normalize(vmin=min(rewards_list), vmax=max(rewards_list))
+        # For CartPole: set the colorbar between 0 and 500
+        if self.env_name == "CartPoleContinuous-v1":
+            norm = mcolors.Normalize(vmin=0, vmax=500)
 
         # Choose a colormap that covers the entire range of rewards
         cmap = plt.get_cmap('RdBu_r')

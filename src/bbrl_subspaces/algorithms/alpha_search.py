@@ -121,14 +121,15 @@ class AlphaSearch:
                 action_agent.set_best_alpha(alpha=best_alpha, logger=logger)
                 info["best_alpha_reward"] = best_reward
                 logger.message("Best reward is with the current subspace: " + str(round(best_reward, 2)))
+                info["best_alpha"] = best_alpha
             else:
                 best_alpha = best_alphas_before_training[cumulative_rewards_before_training.argmax()]
                 action_agent.set_best_alpha(alpha=best_alpha, logger=logger)
                 info["best_alpha_reward"] = best_reward_before_training
                 logger.message("Best reward is with the former subspace: " + str(round(best_reward_before_training, 2)))
                 action_agent.remove_anchor(logger=logger)
+                info["best_alpha"] = best_alpha[:-1]
             
-            info["best_alpha"] = best_alpha
             logger.message("Best distribution after validation: " + str(list(map(lambda x: round(x,2), best_alpha.tolist()))))
             logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")
 
