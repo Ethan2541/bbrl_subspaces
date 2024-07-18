@@ -41,6 +41,7 @@ class Subspace(Framework):
         r1, self.policy_agent, self.critic_agent_1, self.critic_agent_2, info = self.train_algorithm.run(train_env_agent, eval_env_agent, self.policy_agent, self.critic_agent_1, self.critic_agent_2, logger, visualizer=self.visualizer)
         r2, self.policy_agent, self.critic_agent_1, info = self.alpha_search.run(alpha_env_agent, self.policy_agent, self.critic_agent_1, logger, info)
         self.visualizer.plot_subspace(TemporalAgent(Agents(eval_env_agent, self.policy_agent)), logger, info)
+        self.visualizer.reset()
         return r1
 
 

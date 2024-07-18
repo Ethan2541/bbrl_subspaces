@@ -42,6 +42,8 @@ class ContinuousAcrobotEnv(core.Env):
 
 
     def __init__(self, render_mode: Optional[str] = None):
+        self.min_action = -1.0
+        self.max_action = 1.0
         self.render_mode = render_mode
         self.screen = None
         self.clock = None
@@ -51,7 +53,7 @@ class ContinuousAcrobotEnv(core.Env):
         )
         low = -high
         self.observation_space = spaces.Box(low=low, high=high)
-        self.action_space = spaces.Box(low=-1.0, high=1.0)
+        self.action_space = spaces.Box(low=self.min_action, high=self.max_action, shape=(1,))
         self.state = None
 
 

@@ -23,24 +23,32 @@ class SubspaceVisualizer:
         self.is_interactive = interactive
         self.num_points = num_points
         self.thresholds = thresholds
+        self.current_thresholds = list(self.thresholds)
+
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         self.output_path = output_path
 
+    
+    def reset(self, **kwargs):
+        self.current_thresholds = list(self.thresholds)
+
 
     def plot_subspace(self, eval_agent, logger, info={}, n_steps=None, **kwargs):
-        # If the number of steps is specified, only plot on thresholds
-        if n_steps is not None:
-            if (len(self.thresholds) == 0) or (n_steps < self.thresholds[0]):
-                return
-            else:
-                del self.thresholds[0]
-
         logger = logger.get_logger(type(self).__name__ + "/")
-
         n_subspace_anchors = eval_agent.agent.agents[1][0].n_anchors
-        if n_subspace_anchors != 3:
-            logger.message(f"Can't visualize the subspace, as it does not have exactly 3 different anchors: it currently has {n_subspace_anchors} anchors)")
+
+        # If the number of steps is specified, only plot on thresholds
+        if n_subspace_anchors == 3:
+            if n_steps is not None:
+                if (len(self.current_thresholds) == 0) or (n_steps < self.current_thresholds[0]):
+                    return
+                else:
+                    del self.current_thresholds[0]
+        else:
+            # To avoid spamming the logs
+            if n_steps is not None:
+                logger.message(f"Can't visualize the subspace, as it does not have exactly 3 different anchors: it currently has {n_subspace_anchors} anchors)")
             return
 
         message_steps_str = f" at step {n_steps:,d}" if n_steps is not None else ""
