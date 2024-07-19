@@ -24,10 +24,11 @@ def remove_anchor(model):
 
 
 class AlphaSearch:
-    def __init__(self, n_rollouts, n_samples, n_validation_steps, seed):
+    def __init__(self, n_rollouts, n_samples, n_validation_steps, seed, prune_subspace=True):
         self.n_rollouts = n_rollouts
         self.n_samples = n_samples
         self.n_validation_steps = n_validation_steps
+        self.prune_subspace = prune_subspace    # If False, the anchors are always kept in the subspace
         self.seed = seed
 
     def run(self, env_agent, action_agent, critic_agent, logger, info={}):
@@ -127,7 +128,11 @@ class AlphaSearch:
                 action_agent.set_best_alpha(alpha=best_alpha, logger=logger)
                 info["best_alpha_reward"] = best_reward_before_training
                 logger.message("Best reward is with the former subspace: " + str(round(best_reward_before_training, 2)))
-                action_agent.remove_anchor(logger=logger)
+                
+                if self.prune_subspace:
+                    logger.message("Pruning the subspace")
+                    action_agent.remove_anchor(logger=logger)
+
                 info["best_alpha"] = best_alpha[:-1]
             
             logger.message("Best distribution after validation: " + str(list(map(lambda x: round(x,2), best_alpha.tolist()))))

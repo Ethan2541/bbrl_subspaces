@@ -8,7 +8,7 @@ scenario:
       classname: bbrl_subspaces.frameworks.GymScenario
       domain: CartPoleContinuous-v1
       repeat_scenario: 1
-      tasks: ["normal", "normal"]
+      tasks: ["normal"]
       base_env:
             env_name: ${scenario.domain}
             n_envs: 8
@@ -82,6 +82,7 @@ framework:
             n_samples: 1024
             n_validation_steps: 200
             seed: 0
+            prune_subspace: False
 
       evaluation:
             n_rollouts: 1
