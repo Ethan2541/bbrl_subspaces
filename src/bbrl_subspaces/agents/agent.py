@@ -34,7 +34,7 @@ class AlphaAgent(SubspaceAgent):
         self.dist = create_dist(self.dist_type, self.n_anchors)
         # For the initial subspace, we still consider a "former" subspace that has one less anchor
         # Without it, the performances of the overall subspace decrease drastically
-        self.dist2 = create_dist("flat", self.n_anchors - 1)
+        self.dist2 = create_dist("flat", self.n_anchors)
 
         self.best_alpha = None
         self.best_alphas = torch.Tensor([])
@@ -75,8 +75,8 @@ class AlphaAgent(SubspaceAgent):
             B = self.workspace.batch_size()
             # Sampling in the new subspace and the former subspace
             # Without using the former subspace, the chances to get a good policy are very low
-            alphas1 = self.dist.sample(torch.Size([B // 2]))
-            alphas2 = self.dist2.sample(torch.Size([B - (B // 2)]))
+            alphas1 = self.dist.sample(torch.Size([B//2]))
+            alphas2 = self.dist2.sample(torch.Size([B - B//2]))
 
             # Padding the former subspace sampled distribution
             if alphas2.shape[-1] < alphas1.shape[-1]:

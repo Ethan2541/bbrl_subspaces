@@ -47,7 +47,7 @@ class SubspaceVisualizer:
                     del self.current_thresholds[0]
         else:
             # To avoid spamming the logs
-            if n_steps is not None:
+            if n_steps is None:
                 logger.message(f"Can't visualize the subspace, as it does not have exactly 3 different anchors: it currently has {n_subspace_anchors} anchors)")
             return
 
@@ -155,7 +155,11 @@ class SubspaceVisualizer:
 
         # Plot the best estimated policy
         if ("best_alpha" in info) and (info["best_alpha"] is not None):
-            best_point = get_point_from_alphas(np.array(info["best_alpha"].tolist()).reshape(1, -1), triangle_vertices)
+            best_alpha = info["best_alpha"]
+            best_alpha_length = len(best_alpha)
+            if best_alpha_length < 3:
+                best_alpha = torch.cat((best_alpha, torch.zeros(3 - best_alpha_length)))
+            best_point = get_point_from_alphas(np.array(best_alpha.tolist()).reshape(1, -1), triangle_vertices)
             plt.scatter(best_point[0], best_point[1], c="yellow", marker="*", edgecolors="black", linewidths=0.5, s=150, label=f"Best estimated policy (reward = {info['best_alpha_reward']:.2f})")
 
         # Set axis limits and labels
@@ -249,6 +253,9 @@ class SubspaceVisualizer:
         # Plot the best estimated policy
         if ("best_alpha" in info) and (info["best_alpha"] is not None):
             coeffs = info["best_alpha"]
+            best_alpha_length = len(coeffs)
+            if best_alpha_length < 3:
+                coeffs = torch.cat((coeffs, torch.zeros(3 - best_alpha_length)))
             best_point = get_point_from_alphas(np.array(coeffs.tolist()).reshape(1, -1), triangle_vertices)
             reward = info["best_alpha_reward"]
 
@@ -281,6 +288,7 @@ class SubspaceVisualizer:
                 xanchor="left",
                 x=0.01,
             ),
+            margin=dict(l=60, r=20, t=20, b=20),
             plot_bgcolor="white",
             showlegend=True
         )

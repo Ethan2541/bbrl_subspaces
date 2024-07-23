@@ -94,4 +94,4 @@ framework:
             env_name: ${scenario.base_env.env_name}
             num_points: 40
             interactive: False
-            thresholds: [100_000, 300_000, 500_000, 700_000, 900_000]
+            thresholds: [300_000, 500_000, 700_000, 900_000]
