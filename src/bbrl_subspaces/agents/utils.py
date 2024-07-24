@@ -115,6 +115,12 @@ class SubspaceAgents(Agents):
             if euclidean_distances is not None:
                 return euclidean_distances
         return None
+    def subspace_area(self, **kwargs):
+        for agent in self:
+            subspace_area = agent.subspace_area()
+            if subspace_area is not None:
+                return subspace_area
+        return None
     def get_similarities(self):
         for agent in self:
             similarities = agent.get_similarities()
@@ -142,6 +148,8 @@ class SubspaceAgent(Agent):
     def cosine_similarities(self, **kwargs):
         return None
     def euclidean_distances(self, **kwargs):
+        return None
+    def subspace_area(self, **kwargs):
         return None
     def get_similarities(self, **kwargs):
         return None

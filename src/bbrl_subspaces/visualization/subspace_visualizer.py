@@ -17,7 +17,7 @@ from .utils import evaluate_agent, find_axis_through_point, generate_left_edge_p
 
 
 class SubspaceVisualizer:
-    def __init__(self, algorithm_name, env_name, num_points, interactive, thresholds, output_path="./figures/", **kwargs):
+    def __init__(self, algorithm_name, env_name, num_points, interactive, thresholds, output_path="./figures/subspace_visualizations", **kwargs):
         self.algorithm_name = algorithm_name
         self.env_name = env_name
         self.is_interactive = interactive
@@ -133,7 +133,7 @@ class SubspaceVisualizer:
         plt.text(triangle_vertices[2, 0] - 0.02, triangle_vertices[2, 1] + 0.02, "π3", fontsize=10)
 
         # Display the similarities of the anchors
-        plt.text(-0.05, 0.75, info["anchors_similarities"], fontsize=10)
+        plt.text(-0.05, 0.75, f"{info['anchors_similarities']}\n{info['subspace_area']:.2f}", fontsize=10)
 
         # Normalize rewards for colormap
         _, rewards_list = zip(*alpha_reward_list)
@@ -168,7 +168,7 @@ class SubspaceVisualizer:
 
         # Add color bar legend
         cbar = plt.colorbar(cm.ScalarMappable(cmap=cmap, norm=norm), ax=plt.gca())
-        cbar.set_label('Reward')
+        cbar.set_label("Reward")
 
         # Add legend
         if n_steps is None:

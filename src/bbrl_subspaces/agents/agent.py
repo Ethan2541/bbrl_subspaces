@@ -133,12 +133,12 @@ class AlphaAgent(SubspaceAgent):
                 logger.message("Set best_alpha = " + str(list(map(lambda x: round(x,2), alpha.tolist()))))
     
 
-    def add_anchor(self, logger = None,**kwargs):
+    def add_anchor(self, logger=None, **kwargs):
         self.n_anchors += 1
         self.best_alpha = torch.cat([self.best_alpha, torch.zeros(1)], dim=-1)
         self.best_alphas = torch.cat([self.best_alphas, torch.zeros(self.best_alphas.shape[0], 1)], dim=-1)
         self.dist = create_dist(self.dist_type, self.n_anchors)
-        self.dist2 = create_dist("flat", self.n_anchors-1)
+        self.dist2 = create_dist("flat", self.n_anchors - 1)
         if logger is not None:
             logger = logger.get_logger(type(self).__name__ + str("/"))
             logger.message("Increasing alpha size to " + str(self.n_anchors))
@@ -310,6 +310,17 @@ class SubspaceAction(SubspaceAgent):
                 policy_j = torch.nn.utils.parameters_to_vector(anchors[j].parameters())
                 euclidean_distances[f"π{i+1}, π{j+1}"] = torch.norm(policy_i - policy_j, p=2).item()
         return euclidean_distances
+    
+
+    def subspace_area(self, **kwargs):
+        anchors = self.get_subspace_anchors()
+        if len(anchors) != 3:
+            return None
+        anchors_euclidean_distances = self.euclidean_distances()
+        x, y, z = anchors_euclidean_distances["π1, π3"], anchors_euclidean_distances["π2, π3"], anchors_euclidean_distances["π1, π2"]
+        d = (x + y + z) / 2
+        subspace_area = np.sqrt(d*(d-x)*(d-y)*(d-z))
+        return subspace_area
     
 
     def get_similarities(self, **kwargs):

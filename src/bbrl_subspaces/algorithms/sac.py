@@ -2,9 +2,14 @@
 # LICENSE file in the root directory of this source tree.
 #
 import copy
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
+
+from datetime import datetime
+
+from torch.distributions.dirichlet import Dirichlet
 
 from bbrl import get_arguments, get_class, instantiate_class
 from bbrl.workspace import Workspace
@@ -25,7 +30,9 @@ matplotlib.use("TkAgg")
 
 
 class SAC:
-    def __init__(self, params, **kwargs):
+    def __init__(self, name, env_name, params, **kwargs):
+        self.name = name
+        self.env_name = env_name
         self.cfg = params
 
     # Create the SAC Agent
@@ -200,6 +207,10 @@ class SAC:
         logger.message("Initialization")
         best_reward = float("-inf")
         n_epochs = 0
+        n_steps_average_rewards = []
+        average_subspace_rewards = []
+        subspace_areas = []
+        best_average_subspace_reward = float("-inf")
 
         # init_entropy_coef is the initial value of the entropy coef alpha.
         ent_coef = self.cfg.algorithm.init_entropy_coef
@@ -230,6 +241,7 @@ class SAC:
         entropy_coef_optimizer, log_entropy_coef = self.setup_entropy_optimizers()
         nb_steps = 0
         tmp_steps = 0
+        tmp_steps_avg_reward = 0
 
         # If entropy_mode is not auto, the entropy coefficient ent_coef will remain fixed
         if self.cfg.algorithm.entropy_mode == "auto":
@@ -326,6 +338,31 @@ class SAC:
                 # soft_update_params(actor, target_actor, tau)
                 n_epochs += 1
 
+
+            # Evaluating the average subspace reward
+            if nb_steps - tmp_steps_avg_reward > self.cfg.algorithm.avg_reward_interval:
+                tmp_steps_avg_reward = nb_steps
+                n_anchors = eval_agent.agent.agents[1][0].n_anchors
+                eval_workspace = Workspace()
+                alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([self.cfg.algorithm.n_samples]))
+                with torch.no_grad():
+                    eval_agent(
+                        eval_workspace,
+                        t=0,
+                        alphas=alphas,
+                        stop_variable="env/done",
+                    )
+                subspace_areas.append(eval_agent.agent.agents[1][1].subspace_area())
+                cumulative_rewards =  eval_workspace["env/cumulated_reward"][-1]
+                average_cumulative_reward = cumulative_rewards.mean().item()
+
+                if average_cumulative_reward > best_average_subspace_reward:
+                    best_average_subspace_reward = average_cumulative_reward
+
+                average_subspace_rewards.append(average_cumulative_reward)
+                n_steps_average_rewards.append(nb_steps)
+                logger.message(f"After {nb_steps} steps: average subspace reward = {average_cumulative_reward:.02f} (best = {best_average_subspace_reward:.02f})")
+
             # Evaluate
             if nb_steps - tmp_steps > self.cfg.algorithm.eval_interval:
                 tmp_steps = nb_steps
@@ -359,8 +396,21 @@ class SAC:
         logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")
 
         info["anchors_similarities"] = current_actor.agent.get_similarities()
+        info["subspace_area"] = current_actor.agent.subspace_area()
         info["replay_buffer"] = rb
         r = {"n_epochs": n_epochs, "training_time": time.time() - _training_start_time}
+
+        fig = plt.figure(figsize=(10, 5))
+        plt.scatter(n_steps_average_rewards, average_subspace_rewards, c=subspace_areas, cmap="viridis")
+        cbar = plt.colorbar()
+        cbar.set_label("Subspace Area", rotation=270, labelpad=10)
+        plt.xlabel("Number of steps")
+        plt.ylabel("Average subspace reward")
+        plt.title(f"Average subspace reward over time ({self.cfg.algorithm.n_samples} samples)")
+
+        now = datetime.now()
+        date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
+        plt.savefig(f"./figures/average_reward_curves/{self.env_name}_{self.name}_Average_Subspace_Reward_{date_time}.png")
 
         # Arbitrarily returns the critic_1
         return r, actor, critic_1, critic_2, info
