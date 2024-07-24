@@ -195,7 +195,7 @@ class SAC:
 
         # Adding a penalty to ensure that the policies are different enough to prevent the subspace from collapsing
         penalty = sum(list(current_actor.agent.cosine_similarities().values()))
-        actor_loss += penalty
+        actor_loss += self.cfg.algorithm.anticollapse_coef * penalty
 
         return actor_loss.mean()
 
@@ -208,9 +208,11 @@ class SAC:
         best_reward = float("-inf")
         n_epochs = 0
         n_steps_average_rewards = []
-        average_subspace_rewards = []
         subspace_areas = []
+        average_subspace_rewards = []
+        max_subspace_rewards = []
         best_average_subspace_reward = float("-inf")
+        best_max_subspace_reward = float("-inf")
 
         # init_entropy_coef is the initial value of the entropy coef alpha.
         ent_coef = self.cfg.algorithm.init_entropy_coef
@@ -355,13 +357,18 @@ class SAC:
                 subspace_areas.append(eval_agent.agent.agents[1][1].subspace_area())
                 cumulative_rewards =  eval_workspace["env/cumulated_reward"][-1]
                 average_cumulative_reward = cumulative_rewards.mean().item()
+                max_cumulative_reward = cumulative_rewards.max().item()
 
                 if average_cumulative_reward > best_average_subspace_reward:
                     best_average_subspace_reward = average_cumulative_reward
 
+                if max_cumulative_reward > best_max_subspace_reward:
+                    best_max_subspace_reward = max_cumulative_reward
+
                 average_subspace_rewards.append(average_cumulative_reward)
+                max_subspace_rewards.append(max_cumulative_reward)
                 n_steps_average_rewards.append(nb_steps)
-                logger.message(f"After {nb_steps} steps: average subspace reward = {average_cumulative_reward:.02f} (best = {best_average_subspace_reward:.02f})")
+                logger.message(f"After {nb_steps} steps: average subspace reward = {average_cumulative_reward:.02f} (best = {best_average_subspace_reward:.02f}), max subspace reward = {max_cumulative_reward:.02f} (best = {best_max_subspace_reward:.02f})")
 
             # Evaluate
             if nb_steps - tmp_steps > self.cfg.algorithm.eval_interval:
@@ -388,6 +395,22 @@ class SAC:
 
                 if visualizer is not None:
                     info["anchors_similarities"] = current_actor.agent.get_similarities()
+                    # n_anchors = eval_agent.agent.agents[1][0].n_anchors
+                    # # Estimating best alphas in the subspace using K-shot adaptation with K the number of rollouts
+                    # alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([self.cfg.algorithm.n_estimations]))
+                    # # Get a list of n_estimations elements, which are Q-values tensors of size n_rollouts
+                    # for _ in range(self.cfg.algorithm.n_estimations):
+                    #     replay_workspace = rb.get_shuffled(alphas.shape[1])
+                    #     replay_workspace.set_full("alphas", alphas)
+                    #     with torch.no_grad():
+                    #         critic_1(replay_workspace)
+                    #     values.append(replay_workspace["critic-1/q_values"].mean(0))
+                    # # Get the average Q-values for each rollout and sort them
+                    # values = torch.stack(values, dim=0).mean(0)
+                    # sorted_values_indices = values.argsort(descending=True)
+                    # best_alphas = alphas[0, sorted_values_indices]
+                    # info["best_alphas"] = best_alphas
+                    # del replay_workspace
                     visualizer.plot_subspace(
                         TemporalAgent(Agents(copy.deepcopy(eval_env_agent), copy.deepcopy(actor))), logger, info, nb_steps
                     )
@@ -400,17 +423,21 @@ class SAC:
         info["replay_buffer"] = rb
         r = {"n_epochs": n_epochs, "training_time": time.time() - _training_start_time}
 
-        fig = plt.figure(figsize=(10, 5))
-        plt.scatter(n_steps_average_rewards, average_subspace_rewards, c=subspace_areas, cmap="viridis")
-        cbar = plt.colorbar()
-        cbar.set_label("Subspace Area", rotation=270, labelpad=10)
-        plt.xlabel("Number of steps")
-        plt.ylabel("Average subspace reward")
-        plt.title(f"Average subspace reward over time ({self.cfg.algorithm.n_samples} samples)")
-
         now = datetime.now()
         date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
-        plt.savefig(f"./figures/average_reward_curves/{self.env_name}_{self.name}_Average_Subspace_Reward_{date_time}.png")
+
+        fig = plt.figure(figsize=(10, 5))
+        plt.plot(n_steps_average_rewards, average_subspace_rewards, c="blue", label="Average subspace reward", zorder=1)
+        plt.scatter(n_steps_average_rewards, average_subspace_rewards, c=subspace_areas, cmap="viridis", zorder=2)
+        plt.plot(n_steps_average_rewards, max_subspace_rewards, c="red", linestyle="dashed", label="Maximum subspace reward", zorder=1)
+        plt.scatter(n_steps_average_rewards, max_subspace_rewards, c=subspace_areas, cmap="viridis", zorder=2)
+        cbar = plt.colorbar()
+        cbar.set_label("Subspace Area", rotation=270, labelpad=15)
+        plt.xlabel("Number of steps")
+        plt.ylabel("Reward")
+        plt.title(f"Subspace reward over time ({self.cfg.algorithm.n_samples} samples, anticollapse coefficient = {self.cfg.algorithm.anticollapse_coef})")
+        plt.legend()
+        plt.savefig(f"./figures/reward_curves/{self.env_name}_{self.name}_Reward_Curve_{date_time}.png")
 
         # Arbitrarily returns the critic_1
         return r, actor, critic_1, critic_2, info
