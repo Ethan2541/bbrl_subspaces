@@ -12,7 +12,7 @@ scenario:
       base_env:
             env_name: ${scenario.domain}
             n_envs: 8
-            nb_evals: 10
+            nb_evals: 500
             n_rollouts: ${framework.alpha_search.n_rollouts}
             seed:
                   train: 1
@@ -35,7 +35,7 @@ framework:
                               torch: 789
                         nb_seeds: 1
                         n_steps_train: 32
-                        n_steps: 300_000
+                        n_steps: 1_000_000
                         max_grad_norm: 0.5
                         buffer_size: 1e6
                         batch_size: 256
@@ -99,4 +99,4 @@ framework:
             env_name: ${scenario.base_env.env_name}
             num_points: 40
             interactive: False
-            thresholds: [100_000, 300_000, 500_000, 700_000, 900_000]
+            thresholds: []

@@ -368,7 +368,7 @@ class SAC:
                 average_subspace_rewards.append(average_cumulative_reward)
                 max_subspace_rewards.append(max_cumulative_reward)
                 n_steps_average_rewards.append(nb_steps)
-                logger.message(f"After {nb_steps} steps: average subspace reward = {average_cumulative_reward:.02f} (best = {best_average_subspace_reward:.02f}), max subspace reward = {max_cumulative_reward:.02f} (best = {best_max_subspace_reward:.02f})")
+                logger.message(f"After {nb_steps} steps: average subspace reward = {average_cumulative_reward:.02f} (best = {best_average_subspace_reward:.02f}), maximum subspace reward = {max_cumulative_reward:.02f} (best = {best_max_subspace_reward:.02f})")
 
             # Evaluate
             if nb_steps - tmp_steps > self.cfg.algorithm.eval_interval:
@@ -427,10 +427,10 @@ class SAC:
         date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
 
         fig = plt.figure(figsize=(10, 5))
-        plt.plot(n_steps_average_rewards, average_subspace_rewards, c="blue", label="Average subspace reward", zorder=1)
-        plt.scatter(n_steps_average_rewards, average_subspace_rewards, c=subspace_areas, cmap="viridis", zorder=2)
-        plt.plot(n_steps_average_rewards, max_subspace_rewards, c="red", linestyle="dashed", label="Maximum subspace reward", zorder=1)
-        plt.scatter(n_steps_average_rewards, max_subspace_rewards, c=subspace_areas, cmap="viridis", zorder=2)
+        plt.plot(n_steps_average_rewards, average_subspace_rewards, c="blue", label="Average subspace reward", linewidth=0.75, zorder=1)
+        plt.scatter(n_steps_average_rewards, average_subspace_rewards, c=subspace_areas, cmap="viridis", s=20, zorder=2)
+        plt.plot(n_steps_average_rewards, max_subspace_rewards, c="red", linestyle="dashed", label="Maximum subspace reward", linewidth=0.75, zorder=1)
+        plt.scatter(n_steps_average_rewards, max_subspace_rewards, c=subspace_areas, cmap="viridis", s=20, zorder=2)
         cbar = plt.colorbar()
         cbar.set_label("Subspace Area", rotation=270, labelpad=15)
         plt.xlabel("Number of steps")

@@ -12,7 +12,7 @@ scenario:
       base_env:
             env_name: ${scenario.domain}
             n_envs: 8
-            nb_evals: 10
+            nb_evals: 500
             n_rollouts: ${framework.alpha_search.n_rollouts}
             seed:
                   train: 1
@@ -25,6 +25,7 @@ framework:
       train_algorithm:
             classname: bbrl_subspaces.algorithms.SAC
             name: "SAC"
+            env_name: ${scenario.base_env.env_name}
             params:
                   save_best: False
                   algorithm:
@@ -45,6 +46,10 @@ framework:
                         discount_factor: 0.95
                         entropy_mode: "auto" # "auto" or "fixed"
                         init_entropy_coef: 2e-7
+                        avg_reward_interval: 5000
+                        n_samples: ${scenario.base_env.nb_evals}
+                        n_estimations: ${framework.alpha_search.n_samples}
+                        anticollapse_coef: 1.0
 
                   actor_optimizer:
                         classname: torch.optim.Adam
@@ -83,6 +88,7 @@ framework:
             n_samples: 1024
             n_validation_steps: 200
             seed: 0
+            prune_subspace: False
 
       evaluation:
             n_rollouts: 1
@@ -94,4 +100,4 @@ framework:
             env_name: ${scenario.base_env.env_name}
             num_points: 40
             interactive: False
-            thresholds: [100_000, 300_000, 500_000, 700_000, 900_000]
+            thresholds: []
