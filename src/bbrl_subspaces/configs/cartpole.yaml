@@ -48,7 +48,7 @@ framework:
                         avg_reward_interval: 5000
                         n_samples: ${scenario.base_env.nb_evals}
                         n_estimations: ${framework.alpha_search.n_samples}
-                        anticollapse_coef: 0.1
+                        anticollapse_coef: 100.0
 
                   actor_optimizer:
                         classname: torch.optim.Adam
