@@ -133,7 +133,7 @@ class SubspaceVisualizer:
         plt.text(triangle_vertices[2, 0] - 0.02, triangle_vertices[2, 1] + 0.02, "π3", fontsize=10)
 
         # Display the similarities of the anchors
-        plt.text(-0.05, 0.75, f"{info['anchors_similarities']}\n{info['subspace_area']:.2f}", fontsize=10)
+        plt.text(-0.05, 0.75, f"{info['anchors_similarities']}\nArea = {info['subspace_area']:.2f}", fontsize=10)
 
         # Normalize rewards for colormap
         _, rewards_list = zip(*alpha_reward_list)
