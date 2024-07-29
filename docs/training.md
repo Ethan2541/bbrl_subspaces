@@ -13,7 +13,7 @@ In order to leverage traditional training methods, we thus first sample $n_{anch
 
 The weights are resampled when an episode is over, or every $repeat\_alpha$ timesteps. The weights can also be changed only when the current cumulated rewards are not satisfying enough compared to the top K rewards of the replay buffer, where K depends on the $refresh\_rate$ and $buffer\_size$ hyperparameters.
 
-The training phase subsequently frequently updates the parameters of the free anchors (as opposed to the frozen ones), which also updates the current sampled policy as seen in Figure 1.
+The training phase subsequently frequently updates the parameters of the free anchors (as opposed to the frozen ones), which also updates the current sampled policy as seen in Figure 1. It is important to note that if `resampling_policy = True`, then a new policy is sampled specifically for the anchors' updates.
 
 ![Subspace of Policies](assets/subspace_of_policies_training.jpg)
 **Figure 1.** *Policy update of the whole subspace*

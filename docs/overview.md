@@ -12,12 +12,16 @@ A scenario is a succession of tasks that all take place in the same [Gymnasium](
 
 Let's consider the [HalfCheetah](https://gymnasium.farama.org/environments/mujoco/half_cheetah/) environment where a 2-dimensional robot has to learn how to run forward. We define the following tasks:
 
+<center>
+
 | Task     | Configuration                        |
 |----------|--------------------------------------|
 | Normal   | Default environment parameters       |
 | Hugefeet | Larger foot size                     |
 | Moon     | The gravity intensity is set to 0.15 |
 | Rainfall | The friction is decreased to 0.4     |
+
+</center>
 
 A possible scenario using these task is `Normal -> Hugefoot -> Moon -> Rainfall`. Most often, scenarios are carefully design to achieve a specific purpose. Depending on their goal, we can derive a few types of scenarios:
 
