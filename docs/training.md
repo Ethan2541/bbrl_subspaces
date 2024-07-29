@@ -38,8 +38,12 @@ However, BBRL Subspaces currently has a few bugs regarding the support of the an
 ![CartPole Reward Curves for Anticollapse Coefficient = 0.1](assets/cartpole_reward_curves_01.png)
 **Figure 2.a.** *CartPole Reward Curves for Anticollapse Coefficient = 0.1*
 
+<hr/>
+
 ![CartPole Reward Curves for Anticollapse Coefficient = 1](assets/cartpole_reward_curves_1.png)
 **Figure 2.b.** *CartPole Reward Curves for Anticollapse Coefficient = 1*
+
+<hr/>
 
 ![CartPole Reward Curves for Anticollapse Coefficient = 100](assets/cartpole_reward_curves_1.png)
 **Figure 2.c.** *CartPole Reward Curves for Anticollapse Coefficient = 100*

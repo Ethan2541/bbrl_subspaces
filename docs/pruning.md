@@ -20,6 +20,6 @@ To decide whether a new anchors should be kept, it is crucial to separate the in
 
 **NB:** *initially, for the first training task, there is no notion of former subspace.*
 
-In this case, we seek to estimate the best $\frac{n_\_samples}{2}$ policy of the current subspace using the Q-values method. The same goes for the former subspace. These $n\_samples$ policies are evaluated over $validation_steps$ steps and ranked based on their average cumulative rewards.
+In this case, we seek to estimate the best $\frac{n\_samples}{2}$ policy of the current subspace using the Q-values method. The same goes for the former subspace. These $n\_samples$ policies are evaluated over $validation_steps$ steps and ranked based on their average cumulative rewards.
 
 The subspace is pruned, i.e. the last added anchors is removed, when the best sampled policy belong to the former subspace with $n_{anchors} - 1$ anchors.
