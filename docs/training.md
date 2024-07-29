@@ -16,6 +16,7 @@ The weights are resampled when an episode is over, or every $repeat\_alpha$ time
 The training phase subsequently frequently updates the parameters of the free anchors (as opposed to the frozen ones), which also updates the current sampled policy as seen in Figure 1. It is important to note that if `resampling_policy = True`, then a new policy is sampled specifically for the anchors' updates.
 
 ![Subspace of Policies](assets/subspace_of_policies_training.jpg)
+
 **Figure 1.** *Policy update of the whole subspace*
 
 Regarding the use of the actor and critic losses, they are actually almost identical to a regular training. The only difference is that the actor loss leverages an anticollapse term.
@@ -36,14 +37,17 @@ Here, we only consider the pairwise cosine similarities, and add their sum as a 
 However, BBRL Subspaces currently has a few bugs regarding the support of the anticollapse coefficient. It seems that the latter has no impact on the subspace training at the moment. For instance, in the following figures, the reward curves overlap despite the different values of the anticollapse coefficient.
 
 ![CartPole Reward Curves for Anticollapse Coefficient = 0.1](assets/cartpole_reward_curves_01.png)
+
 **Figure 2.a.** *CartPole Reward Curves for Anticollapse Coefficient = 0.1*
 
 <hr/>
 
 ![CartPole Reward Curves for Anticollapse Coefficient = 1](assets/cartpole_reward_curves_1.png)
+
 **Figure 2.b.** *CartPole Reward Curves for Anticollapse Coefficient = 1*
 
 <hr/>
 
 ![CartPole Reward Curves for Anticollapse Coefficient = 100](assets/cartpole_reward_curves_1.png)
+
 **Figure 2.c.** *CartPole Reward Curves for Anticollapse Coefficient = 100*
