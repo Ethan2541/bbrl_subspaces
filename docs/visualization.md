@@ -2,7 +2,7 @@
 
 ## Reward curves
 
-The first kind of figures that is plotted during an execution is the reward curves. They represent the maximum and average rewards of the subspace, based on a certain number of sampled policies, over time. While the anticollapse coefficient is currently bugged and seems to have little to no impact on the curves as they can be overlapped (see [here](./training.md)), the number of evaluation environments also defines the number of sampled policies. Thus, the greater it is, the more reliable the estimations of the subspace rewards. However, a high number of evaluation environments drastically increase the training time.
+The first kind of figures that is plotted during an execution is the reward curves. They represent the maximum and average rewards of the subspace, based on a certain number of sampled policies, over time. The anticollapse coefficient and the number of evaluation environments, which defines the number of sampled policies, are both interesting parameters to tinker with. Thus, the greater it is, the more reliable the estimations of the subspace rewards. However, a high number of evaluation environments drastically increase the training time.
 
 ![CartPole Reward Curves for 500 samples](assets/cartpole_reward_curves_1.png)
 

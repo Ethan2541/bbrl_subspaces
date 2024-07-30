@@ -2,7 +2,7 @@
 
 ## Outlook
 
-This page is the main entry point to the BBRL Subspaces documentation. We expand the BBRL library with the notion of Subspaces of Policies. Behind this core concept, the goal is to improve an agent's performances over a wide range of problems despite only learning a few behaviours: the idea is that a new problem can be seen as a combination of well-known problems, to a certain extent. The main interest of such subspaces is that we get an infinite amount of policies while only storing a few ones.
+This page is the main entry point to the BBRL Subspaces documentation. We expand the BBRL library with the notion of Subspaces of Policies. Behind this core concept, the goal is to improve an agent's performance over a wide range of problems despite only learning a few behaviours: the idea is that a new problem can be seen as a combination of well-known problems, to a certain extent. The main interest of such subspaces is that we get an infinite amount of policies while only storing a few ones.
 
 ## Main concepts
 
@@ -23,7 +23,7 @@ Let's consider the [HalfCheetah](https://gymnasium.farama.org/environments/mujoc
 
 </center>
 
-A possible scenario using these task is `Normal -> Hugefoot -> Moon -> Rainfall`. Most often, scenarios are carefully design to achieve a specific purpose. Depending on their goal, we can derive a few types of scenarios:
+A possible scenario using these task is `Normal -> Hugefoot -> Moon -> Rainfall`. Most often, scenarios are carefully designed to achieve a specific purpose. Depending on their goal, we can derive a few types of scenarios:
 
 - **Forgetting Scenarios:** a single policy tends to forget the former task when learning a new one.
 
@@ -38,18 +38,14 @@ A possible scenario using these task is `Normal -> Hugefoot -> Moon -> Rainfall`
 
 ### Subspace of Policies
 
-A subspace of policies is defined by $n$ different policies called **anchors**. Using **Dirichlet distributions**, we can combine these anchors to produce a new sampled policy. Hence, a subspace actually represents an infinity of policies. Compared to single policy training where we aim to get the most optimal results with the policy, subspace training strives to get the largest subspace (i.e. the anchors' parameters should be as pairwise different as possible) with almost only well-performing policies.
+A $n$-dimensional subspace of policies is defined as a convex hull delimited by $n$ different policies called **anchors**. Following this definition, a policy from the subspace is a linear combination of these anchors weighted by a sampled **Dirichlet distributions**. Hence, a subspace actually represents an infinity of policies. Compared to single policy training where we aim to get the most optimal results with the policy, subspace training strives to get the largest subspace (i.e. the anchors' parameters should be as pairwise different as possible) with almost only well-performing policies.
 
 **NB:** a subspace of policies with 2 anchors is called a **Line of Policies**.
 
 
 ## Algorithm
 
-First, dealing with subspaces of policies requires to implement agents specifically designed to encompass Dirichlet distributions and multiple anchors' outputs. These agents are described [here](./agents.md).
-
-Currently, the only training algorithm that has been implemented is the Soft Actor Critic (SAC) algorithm with two critics. A subspace of policies is trained on a scenario, sequentially, one task at a time. More details can be found [here](./training.md).
-
-When training on a task in a multitask scenario, a new anchor is systematically added to the subspace. To spare memory usage, it is important to remove this anchor if it actually underperforms. It is explained more thoroughly [here](./pruning.md).
+First, dealing with subspaces of policies requires to implement agents specifically designed to encompass Dirichlet distributions and multiple anchors' outputs. These agents are described [here](./agents.md). Secondly, a subspace of policies is trained on a scenario, sequentially, one task at a time. More details can be found [here](./training.md).
 
 
 ## Visualization
