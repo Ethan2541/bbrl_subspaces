@@ -13,6 +13,7 @@ dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools_scm]
 write_to = "src/bbrl_subspaces/_version.py"
+fallback_version = "0.0.0-dev"
 
 [build-system]
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
