@@ -6,7 +6,7 @@ authors = [
     { name = "Ethan Luong",  email = "ethan.luong@isir.upmc.fr" }
 ]
 description = "BBRL for Subspaces of Policies in Continuous Reinforcement Learning"
-dynamic = ["version"]
+dynamic = ["dependencies", "version"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}

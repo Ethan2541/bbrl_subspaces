@@ -1,14 +1,10 @@
 bbrl
 bbrl_algos
-copy
-functools
-gymnasium[mujoco]
-hydra
+gymnasium
+hydra-core
 matplotlib
 numpy
 plotly
 python-ternary
-re
 tk
 torch
-typing
