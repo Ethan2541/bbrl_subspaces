@@ -24,7 +24,8 @@ def remove_anchor(model):
 
 
 class AlphaSearch:
-    def __init__(self, n_rollouts, n_samples, n_validation_steps, seed, prune_subspace=True):
+    def __init__(self, n_rollouts, n_samples, n_validation_steps, seed, prune_subspace=True, is_initial_task=True):
+        self.is_initial_task = is_initial_task
         self.n_rollouts = n_rollouts
         self.n_samples = n_samples
         self.n_validation_steps = n_validation_steps
@@ -35,6 +36,12 @@ class AlphaSearch:
         torch.manual_seed(self.seed)
         logger = logger.get_logger(type(self).__name__ + "/")
         n_anchors = action_agent[0].n_anchors
+
+        # In the initial subspace, the former and new subspaces should be the same
+        if self.is_initial_task:
+            former_n_anchors = n_anchors
+        else:
+            former_n_anchors = n_anchors - 1
         
         # Subspace of policies (several anchors)
         if n_anchors > 1:
@@ -69,7 +76,7 @@ class AlphaSearch:
             
 
             # Estimate best alphas in the former subspace using n_samples sampled policies
-            alphas = Dirichlet(torch.ones(n_anchors-1)).sample(torch.Size([n_samples]))
+            alphas = Dirichlet(torch.ones(former_n_anchors)).sample(torch.Size([n_samples]))
             # Zero padding to match the size of the current subspace
             alphas = torch.cat([alphas, torch.zeros(*alphas.shape[:-1], 1)], dim=-1)
             alphas = torch.stack([alphas for _ in range(2)], dim=0)

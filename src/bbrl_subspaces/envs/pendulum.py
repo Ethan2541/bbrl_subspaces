@@ -20,11 +20,6 @@ DEFAULT_Y = 1.0
 
 
 class PendulumSubspaceEnv(PendulumEnv):
-    metadata = {
-        "render_modes": ["human", "rgb_array"],
-        "render_fps": 30,
-    }
-
     def __init__(self, **kwargs):
         super().__init__(kwargs.get("render_mode", None), kwargs.get("g", 10.0))
         self.init_parameters(**kwargs)
@@ -44,7 +39,7 @@ class PendulumSubspaceEnv(PendulumEnv):
         self.observation_space = spaces.Box(low=-high, high=high, dtype=np.float32)
 
 
-    def init_parameters(self, max_speed=8, max_torque=2.0, dt=0.05, g=10.0, m=1.0, l=1.0):
+    def init_parameters(self, max_speed=8, max_torque=2.0, dt=0.05, g=10.0, m=1.0, l=1.0, **kwargs):
         self.max_speed = max_speed
         self.max_torque = max_torque
         self.dt = dt

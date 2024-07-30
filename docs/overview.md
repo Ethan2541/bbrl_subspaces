@@ -27,11 +27,11 @@ A possible scenario using these task is `Normal -> Hugefoot -> Moon -> Rainfall`
 
 - **Forgetting Scenarios:** a single policy tends to forget the former task when learning a new one.
 
-- **Transfer Scenarios:** a single policy has more difficulties to learn a new task after having learned the former one, rather than learning it from scratch.
+- **Transfer Scenarios:** if the transfer is positive, a single policy has less difficulties to learn a new task after having learnt the former one, rather than learning it from scratch. Instead, if the transfer is negative, a policy has a hard time learning a new task after having learnt the former one.
 
-- **Robustness Scenarios:** alternate between a normal task and a very different distraction task that disturbs the whole learning process of a single policy. While this challenge looks particularly simple from a human perspective (a simple -1 vector applied on the output is fine to find an optimal policy in a continual setting), we figured out that the Fine- tuning policies struggle to recover good performances (the final average reward actually decreases).
+- **Robustness Scenarios:** alternate between a normal task and a very distractive task that disturbs the whole learning process of a single policy. For example, when inverting the actions (i.e. multiplying by a -1 factor), well-performing policies actually struggle to recover good performances: the final average reward actually decreases.
 
-- **Compositional Scenarios:** present two first tasks that will be useful to learn the last one, but a very different distraction task is put at the third place to disturb this forward transfer. The last task is indeed a combination of the two first tasks in the sense that it combines their particularities. For example, if the first task is `Moon` and the second one is `Tinyfeet`, the last one will combine moon’s gravity and feet morphological changes.
+- **Compositional Scenarios:** present two first tasks that will be useful to learn the last one, which is a combination of the particularities of the two first tasks. For instance, if the first task is `Moon` and the second one is `Tinyfeet`, the last one will combine moon’s gravity and feet morphological changes. Before learning the last task, a distractive task can be set to disturb the forward transfer.
 
 - **Humanoid Scenarios:** additional scenarios built with the challenging environment `Humanoid` to test the subspace method in higher dimensions.
 

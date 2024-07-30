@@ -1,23 +1,38 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 #
+"""
+Continuous action version of the classic acrobot system
+"""
+
 from typing import Optional
 
 import numpy as np
 from numpy import cos, pi, sin
 
-from gym import core, logger, spaces
-from gym.error import DependencyNotInstalled
+import gymnasium as gym
+from gymnasium import Env, spaces
+from gymnasium.envs.classic_control import utils
+from gymnasium.envs.classic_control.acrobot import AcrobotEnv
+from gymnasium.error import DependencyNotInstalled
 
-from gym.envs.classic_control import utils
+
+__copyright__ = "Copyright 2013, RLPy http://acl.mit.edu/RLPy"
+__credits__ = [
+    "Alborz Geramifard",
+    "Robert H. Klein",
+    "Christoph Dann",
+    "William Dabney",
+    "Jonathan P. How",
+]
+__license__ = "BSD 3-Clause"
+__author__ = "Christoph Dann <cdann@cdann.de>"
+
+# SOURCE:
+# https://github.com/rlpy/rlpy/blob/master/rlpy/Domains/Acrobot.py
 
 
-class ContinuousAcrobotSubspaceEnv(core.Env):
-    metadata = {
-        "render_modes": ["human", "rgb_array"],
-        "render_fps": 15,
-    }
-
+class ContinuousAcrobotSubspaceEnv(AcrobotEnv):
     dt = 0.2
 
     LINK_LENGTH_1 = 1.0  # [m]
@@ -44,26 +59,36 @@ class ContinuousAcrobotSubspaceEnv(core.Env):
     actions_num = 3
 
 
-    def __init__(self, render_mode: Optional[str] = None):
-        self.min_action = -1.0
-        self.max_action = 1.0
-        self.render_mode = render_mode
+    def __init__(self, **kwargs):
+        super().__init__(kwargs.get("render_mode", None))
+        self.init_parameters(**kwargs)
+
         self.screen = None
         self.clock = None
         self.isopen = True
         high = np.array(
-            [1.0, 1.0, 1.0, 1.0, self.MAX_VEL_1, self.MAX_VEL_2], dtype=np.double
+            [1.0, 1.0, 1.0, 1.0, self.MAX_VEL_1, self.MAX_VEL_2], dtype=np.float32
         )
         low = -high
-        self.observation_space = spaces.Box(low=low, high=high)
-        self.action_space = spaces.Box(low=self.min_action, high=self.max_action, shape=(1,))
+        self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
+        self.action_space = spaces.Discrete(3)
         self.state = None
+
+
+    def init_parameters(self, **kwargs):
+        pass
 
 
     def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None):
         super().reset(seed=seed)
-        low, high = utils.maybe_parse_reset_bounds(options, -0.1, 0.1)
-        self.state = self.np_random.uniform(low=low, high=high, size=(4,))
+        # Note that if you use custom reset bounds, it may lead to out-of-bound
+        # state/observations.
+        low, high = utils.maybe_parse_reset_bounds(
+            options, -0.1, 0.1  # default low
+        )  # default high
+        self.state = self.np_random.uniform(low=low, high=high, size=(4,)).astype(
+            np.float32
+        )
 
         if self.render_mode == "human":
             self.render()
@@ -81,28 +106,31 @@ class ContinuousAcrobotSubspaceEnv(core.Env):
                 -self.torque_noise_max, self.torque_noise_max
             )
 
-        # Now, augment the state with our force action so it can be passed to _dsdt
+        # Now, augment the state with our force action so it can be passed to
+        # _dsdt
         s_augmented = np.append(s, torque)
 
         ns = rk4(self._dsdt, s_augmented, [0, self.dt])
+
         ns[0] = wrap(ns[0], -pi, pi)
         ns[1] = wrap(ns[1], -pi, pi)
         ns[2] = bound(ns[2], -self.MAX_VEL_1, self.MAX_VEL_1)
         ns[3] = bound(ns[3], -self.MAX_VEL_2, self.MAX_VEL_2)
         self.state = ns
-        done = self._terminal()
-        reward = -1.0 if not done else 0.0
+        terminated = self._terminal()
+        reward = -1.0 if not terminated else 0.0
 
         if self.render_mode == "human":
             self.render()
-        return (self._get_ob(), reward, done, False, {})
+        # truncation=False as the time limit is handled by the `TimeLimit` wrapper added during `make`
+        return self._get_ob(), reward, terminated, False, {}
 
 
     def _get_ob(self):
         s = self.state
         assert s is not None, "Call reset before using AcrobotEnv object."
         return np.array(
-            [cos(s[0]), sin(s[0]), cos(s[1]), sin(s[1]), s[2], s[3]], dtype=np.double
+            [cos(s[0]), sin(s[0]), cos(s[1]), sin(s[1]), s[2], s[3]], dtype=np.float32
         )
 
 
@@ -127,12 +155,7 @@ class ContinuousAcrobotSubspaceEnv(core.Env):
         theta2 = s[1]
         dtheta1 = s[2]
         dtheta2 = s[3]
-        d1 = (
-            m1 * lc1**2
-            + m2 * (l1**2 + lc2**2 + 2 * l1 * lc2 * cos(theta2))
-            + I1
-            + I2
-        )
+        d1 = m1 * lc1**2 + m2 * (l1**2 + lc2**2 + 2 * l1 * lc2 * cos(theta2)) + I1 + I2
         d2 = m2 * (lc2**2 + l1 * lc2 * cos(theta2)) + I2
         phi2 = m2 * lc2 * g * cos(theta1 + theta2 - pi / 2.0)
         phi1 = (
@@ -154,22 +177,24 @@ class ContinuousAcrobotSubspaceEnv(core.Env):
         ddtheta1 = -(d2 * ddtheta2 + phi1) / d1
         return dtheta1, dtheta2, ddtheta1, ddtheta2, 0.0
 
+
     def render(self):
         if self.render_mode is None:
-            logger.warn(
+            assert self.spec is not None
+            gym.logger.warn(
                 "You are calling render method without specifying any render mode. "
                 "You can specify the render_mode at initialization, "
-                f'e.g. gym("{self.spec.id}", render_mode="rgb_array")'
+                f'e.g. gym.make("{self.spec.id}", render_mode="rgb_array")'
             )
             return
 
         try:
             import pygame
             from pygame import gfxdraw
-        except ImportError:
+        except ImportError as e:
             raise DependencyNotInstalled(
-                "pygame is not installed, run `pip install gym[classic_control]`"
-            )
+                'pygame is not installed, run `pip install "gymnasium[classic-control]"`'
+            ) from e
 
         if self.screen is None:
             pygame.init()
@@ -215,7 +240,7 @@ class ContinuousAcrobotSubspaceEnv(core.Env):
             color=(0, 0, 0),
         )
 
-        for ((x, y), th, llen) in zip(xys, thetas, link_lengths):
+        for (x, y), th, llen in zip(xys, thetas, link_lengths):
             x = x + offset
             y = y + offset
             l, r, t, b = 0, llen, 0.1 * scale, -0.1 * scale
@@ -244,6 +269,7 @@ class ContinuousAcrobotSubspaceEnv(core.Env):
                 np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2)
             )
 
+
     def close(self):
         if self.screen is not None:
             import pygame
@@ -253,9 +279,10 @@ class ContinuousAcrobotSubspaceEnv(core.Env):
             self.isopen = False
 
 
+
 def wrap(x, m, M):
-    """Wraps ``x`` so m <= x <= M; but unlike ``bound()`` which
-    truncates, ``wrap()`` wraps x around the coordinate system defined by m,M.\n
+    """Wraps `x` so m <= x <= M; but unlike `bound()` which
+    truncates, `wrap()` wraps x around the coordinate system defined by m,M.\n
     For example, m = -180, M = 180 (degrees), x = 360 --> returns 0.
 
     Args:
@@ -294,41 +321,16 @@ def bound(x, m, M=None):
 
 
 def rk4(derivs, y0, t):
-    """
-    Integrate 1-D or N-D system of ODEs using 4-th order Runge-Kutta.
-
-    Example for 2D system:
-
-        >>> def derivs(x):
-        ...     d1 =  x[0] + 2*x[1]
-        ...     d2 =  -3*x[0] + 4*x[1]
-        ...     return d1, d2
-
-        >>> dt = 0.0005
-        >>> t = np.arange(0.0, 2.0, dt)
-        >>> y0 = (1,2)
-        >>> yout = rk4(derivs, y0, t)
-
-    Args:
-        derivs: the derivative of the system and has the signature ``dy = derivs(yi)``
-        y0: initial state vector
-        t: sample times
-
-    Returns:
-        yout: Runge-Kutta approximation of the ODE
-    """
-
     try:
         Ny = len(y0)
     except TypeError:
-        yout = np.zeros((len(t),), np.float_)
+        yout = np.zeros((len(t),), np.float64)
     else:
-        yout = np.zeros((len(t), Ny), np.float_)
+        yout = np.zeros((len(t), Ny), np.float64)
 
     yout[0] = y0
 
     for i in np.arange(len(t) - 1):
-
         this = t[i]
         dt = t[i + 1] - this
         dt2 = dt / 2.0

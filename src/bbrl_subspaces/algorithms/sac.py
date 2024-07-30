@@ -196,7 +196,7 @@ class SAC:
 
         # Adding a penalty to ensure that the policies are different enough to prevent the subspace from collapsing
         penalty = sum(list(current_actor.agent.cosine_similarities().values()))
-        logger.add_log("distance_loss", actor_loss, nb_steps)
+        logger.add_log("distance_loss", penalty, nb_steps)
 
         actor_loss += self.cfg.algorithm.anticollapse_coef * penalty
 

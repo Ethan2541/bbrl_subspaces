@@ -18,6 +18,7 @@ class GymScenario(Scenario):
             self._train_tasks.append(Task(base_env, k))
             self._test_tasks.append(Task(base_env, k))
 
+
     def get_environment_configuration_from_task(self, domain, task):
         match domain:
             case "CartPoleContinuousSubspace-v0" | "CartPoleContinuousSubspace-v1":
@@ -37,6 +38,11 @@ class GymScenario(Scenario):
                         return {}
                     
             case "PendulumSubspace-v0" | "PendulumSubspace-v1":
+                match task:
+                    case "normal" | _:
+                        return {}
+                    
+            case "AcrobotContinuousSubspace-v0" | "AcrobotContinuousSubspace-v1":
                 match task:
                     case "normal" | _:
                         return {}

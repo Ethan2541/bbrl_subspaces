@@ -33,6 +33,7 @@ class Subspace(Framework):
         task_id = task.task_id()
         info = {"task_id": task_id}
         if task_id > 0:
+            self.alpha_search.is_initial_task = False
             self.policy_agent.add_anchor(logger=logger)
             self.critic_agent_1.add_anchor(n_anchors=self.policy_agent[0].n_anchors, logger=logger)
             self.critic_agent_2.add_anchor(n_anchors=self.policy_agent[0].n_anchors, logger=logger)

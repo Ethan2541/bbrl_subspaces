@@ -9,7 +9,7 @@ logger:
 
 scenario:
       classname: bbrl_subspaces.frameworks.GymScenario
-      domain: AcrobotContinuous-v1
+      domain: AcrobotContinuousSubspace-v1
       repeat_scenario: 1
       tasks: ["normal"]
       base_env:
@@ -28,6 +28,7 @@ framework:
       train_algorithm:
             classname: bbrl_subspaces.algorithms.SAC
             name: "SAC"
+            env_name: ${scenario.base_env.env_name}
             params:
                   save_best: False
                   algorithm:
@@ -47,6 +48,10 @@ framework:
                         discount_factor: 0.98
                         entropy_mode: "auto" # "auto" or "fixed"
                         init_entropy_coef: 2e-7
+                        avg_reward_interval: 5000
+                        n_samples: ${scenario.base_env.nb_evals}
+                        n_estimations: ${framework.alpha_search.n_samples}
+                        anticollapse_coef: 1.0
 
                   actor_optimizer:
                         classname: torch.optim.Adam
