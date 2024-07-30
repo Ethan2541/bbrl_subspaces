@@ -28,7 +28,6 @@ import time
 matplotlib.use("TkAgg")
 
 
-
 class SAC:
     def __init__(self, name, env_name, params, **kwargs):
         self.name = name
