@@ -1,3 +1,6 @@
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+#
 from typing import Optional
 
 import numpy as np
@@ -9,7 +12,7 @@ from gym.error import DependencyNotInstalled
 from gym.envs.classic_control import utils
 
 
-class ContinuousAcrobotEnv(core.Env):
+class ContinuousAcrobotSubspaceEnv(core.Env):
     metadata = {
         "render_modes": ["human", "rgb_array"],
         "render_fps": 15,
