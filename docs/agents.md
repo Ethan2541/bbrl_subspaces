@@ -27,7 +27,7 @@ The `AlphaAgent` is used to sample Dirichlet distributions, and thus to get samp
 
 ### SubspaceAction
 
-The `SubspaceAction` agent is a Gaussian actor used to compute the `action_logprobs`. It leverages a neural network using `LinearSubspace` modules. As such, the anchors are not exactly trained independently, because the output of the first layer, that depends on all the anchors, is used as an input to the next layer.
+The `SubspaceAction` agent is a Gaussian actor used to compute the `action_logprobs`. It leverages a neural network using a sequence of `LinearSubspace` modules. As such, the anchors are not exactly trained independently, because the output of the first layer, that depends on all the anchors, is used as an input to the next layer.
 
 
 ## Critic
