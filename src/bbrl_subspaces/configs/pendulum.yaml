@@ -9,7 +9,7 @@ logger:
 
 scenario:
       classname: bbrl_subspaces.frameworks.GymScenario
-      domain: Pendulum-v1
+      domain: PendulumSubspace-v1
       repeat_scenario: 1
       tasks: ["normal"]
       base_env:

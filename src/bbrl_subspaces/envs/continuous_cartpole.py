@@ -18,7 +18,7 @@ class ContinuousCartPoleSubspaceEnv(CartPoleEnv):
     """Continuous version of the CartPole-v1 environment with tunable parameters"""
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(kwargs.get("render_mode", None))
         self.init_parameters(**kwargs)
         self.min_action = -1.0
         self.max_action = 1.0

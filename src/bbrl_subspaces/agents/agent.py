@@ -308,7 +308,7 @@ class SubspaceAction(SubspaceAgent):
             for j in range(i+1, self.n_anchors):
                 policy_i = torch.nn.utils.parameters_to_vector(anchors[i].parameters())
                 policy_j = torch.nn.utils.parameters_to_vector(anchors[j].parameters())
-                euclidean_distances[f"π{i+1}, π{j+1}"] = torch.norm(policy_i - policy_j, p=2).item()
+                euclidean_distances[f"π{i+1}, π{j+1}"] = torch.norm(policy_i - policy_j, p=2)
         return euclidean_distances
     
 
@@ -317,7 +317,7 @@ class SubspaceAction(SubspaceAgent):
         if len(anchors) != 3:
             return None
         anchors_euclidean_distances = self.euclidean_distances()
-        x, y, z = anchors_euclidean_distances["π1, π3"], anchors_euclidean_distances["π2, π3"], anchors_euclidean_distances["π1, π2"]
+        x, y, z = anchors_euclidean_distances["π1, π3"].item(), anchors_euclidean_distances["π2, π3"].item(), anchors_euclidean_distances["π1, π2"].item()
         d = (x + y + z) / 2
         subspace_area = np.sqrt(d*(d-x)*(d-y)*(d-z))
         return subspace_area
@@ -326,9 +326,9 @@ class SubspaceAction(SubspaceAgent):
     def get_similarities(self, **kwargs):
         similarities = "Similarities of the anchors:"
         for key, similarity in self.cosine_similarities().items():
-            similarities += f"\ncos({key}) = {round(similarity, 2)}"
+            similarities += f"\ncos({key}) = {round(similarity.item(), 2)}"
         for key, distance in self.euclidean_distances().items():
-            similarities += f"\nL2({key}) = {round(distance, 2)}"
+            similarities += f"\nL2({key}) = {round(distance.item(), 2)}"
         return similarities
     
 

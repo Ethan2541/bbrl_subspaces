@@ -172,7 +172,7 @@ class SAC:
         return critic_loss_1, critic_loss_2
 
 
-    def compute_actor_loss(self, ent_coef, current_actor, q_agents, rb_workspace):
+    def compute_actor_loss(self, ent_coef, current_actor, q_agents, rb_workspace, logger, nb_steps):
         """
         Actor loss computation
         :param ent_coef: The entropy coefficient $\alpha$
@@ -192,11 +192,16 @@ class SAC:
         current_q_values = torch.min(q_values_1, q_values_2).squeeze(-1)
 
         actor_loss = ent_coef * action_logprobs_new[0] - current_q_values[0]
+        logger.add_log("rl_loss", actor_loss.mean(), nb_steps)
 
         # Adding a penalty to ensure that the policies are different enough to prevent the subspace from collapsing
         penalty = sum(list(current_actor.agent.cosine_similarities().values()))
+        logger.add_log("distance_loss", actor_loss, nb_steps)
+
         actor_loss += self.cfg.algorithm.anticollapse_coef * penalty
 
+        # print(current_actor.agent[1].model[0].anchors[0].weight.grad)
+        
         return actor_loss.mean()
 
 
@@ -311,7 +316,7 @@ class SAC:
                 # Actor update
                 actor_optimizer.zero_grad()
                 actor_loss = self.compute_actor_loss(
-                    ent_coef, current_actor, q_agents, rb_workspace
+                    ent_coef, current_actor, q_agents, rb_workspace, bbrl_logger, nb_steps
                 )
                 bbrl_logger.add_log("actor_loss", actor_loss, nb_steps)
                 actor_loss.backward()

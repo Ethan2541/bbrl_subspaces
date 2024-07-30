@@ -3,3 +3,4 @@
 #
 from bbrl_subspaces.envs.continuous_acrobot import ContinuousAcrobotSubspaceEnv
 from bbrl_subspaces.envs.continuous_cartpole import ContinuousCartPoleSubspaceEnv
+from bbrl_subspaces.envs.pendulum import PendulumSubspaceEnv

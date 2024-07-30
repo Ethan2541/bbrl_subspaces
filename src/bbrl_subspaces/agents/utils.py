@@ -59,7 +59,7 @@ def get_env_agents(cfg, *, autoreset=True, include_last_state=True, alpha_search
     # Train environment
     train_env_agent = ParallelGymAgent(
         partial(
-            make_env, cfg.env_name, autoreset=autoreset, wrappers=wrappers
+            make_env, cfg.env_name, autoreset=autoreset, wrappers=wrappers, **cfg.kwargs
         ),
         cfg.n_envs,
         include_last_state=include_last_state,
@@ -68,7 +68,7 @@ def get_env_agents(cfg, *, autoreset=True, include_last_state=True, alpha_search
 
     # Test environment (implictly, autoreset=False, which is always the case for evaluation environments)
     eval_env_agent = ParallelGymAgent(
-        partial(make_env, cfg.env_name, wrappers=wrappers),
+        partial(make_env, cfg.env_name, wrappers=wrappers, **cfg.kwargs),
         cfg.nb_evals,
         include_last_state=include_last_state,
         seed=cfg.seed.eval,
@@ -77,7 +77,7 @@ def get_env_agents(cfg, *, autoreset=True, include_last_state=True, alpha_search
     # Test environment to estimate the best sampled distribution of a subspace
     if alpha_search:
         alpha_env_agent = ParallelGymAgent(
-            partial(make_env, cfg.env_name, wrappers=wrappers),
+            partial(make_env, cfg.env_name, wrappers=wrappers, **cfg.kwargs),
             cfg.n_rollouts,
             include_last_state=include_last_state,
             seed=cfg.seed.alpha_search,
@@ -237,7 +237,7 @@ class LinearSubspace(nn.Module):
                     b2 = self.anchors[j].bias
                     p2 = ((b1 * b2).sum() / max(((b1**2).sum().sqrt() * (b2**2).sum().sqrt()), 1e-8))**2
 
-                    cosine_similarities["θ" + str(i+1) + ", θ" + str(j+1)] = (p1 + p2).item()
+                    cosine_similarities["θ" + str(i+1) + ", θ" + str(j+1)] = (p1 + p2)
         return cosine_similarities
 
 
