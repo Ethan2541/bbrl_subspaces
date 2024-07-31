@@ -38,15 +38,35 @@ class GymScenario(Scenario):
                         return {}
                     
             case "PendulumSubspace-v0" | "PendulumSubspace-v1":
+                # Environment parameters:
+                #     max_speed: maximum angular speed
+                #     max_torque: maximum torque
+                #     dt: seconds between state updates
+                #     g: acceleration due to gravity
+                #     m: mass of the pendulum
+                #     l: length of the pendulum
                 match task:
                     case "normal" | _:
                         return {}
                     
             case "AcrobotContinuousSubspace-v0" | "AcrobotContinuousSubspace-v1":
+                # Environment parameters:
+                #     dt: seconds between state updates
+                #     link_length_1: length of link 1
+                #     link_length_2: length of link 2
+                #     link_mass_1: mass of link 1
+                #     link_mass_2: mass of link 2
+                #     link_com_pos_1: position of the center of mass of link 1
+                #     link_com_pos_2: position of the center of mass of link 2
+                #     link_moi: moments of inertia for both links
+                #     g: acceleration due to gravity
+                #     max_vel_1: maximum angular velocity of link 1
+                #     max_vel_2: maximum angular velocity of link 2
+                #     torque_noise_max: maximum noise to be added to the torque
                 match task:
                     case "normal" | _:
                         return {}
             
-            # Environment not supported -> Use default configuration
+            # Unsupported environment: use default configuration
             case _:
                 return {}

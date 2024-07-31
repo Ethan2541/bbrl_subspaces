@@ -23,6 +23,7 @@ from bbrl_subspaces.agents.utils import SubspaceAgents
 from bbrl_subspaces.logger import Logger
 
 import matplotlib
+import os
 import time
 
 matplotlib.use("TkAgg")
@@ -33,6 +34,11 @@ class SAC:
         self.name = name
         self.env_name = env_name
         self.cfg = params
+
+        output_path = "./figures/reward_curves"
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+
 
     # Create the SAC Agent
     def create_sac_agent(self, train_env_agent, eval_env_agent, actor, critic_1, critic_2):

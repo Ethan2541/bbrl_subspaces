@@ -77,8 +77,11 @@ class AlphaSearch:
 
             # Estimate best alphas in the former subspace using n_samples sampled policies
             alphas = Dirichlet(torch.ones(former_n_anchors)).sample(torch.Size([n_samples]))
+            
             # Zero padding to match the size of the current subspace
-            alphas = torch.cat([alphas, torch.zeros(*alphas.shape[:-1], 1)], dim=-1)
+            if not self.is_initial_task:
+                alphas = torch.cat([alphas, torch.zeros(*alphas.shape[:-1], 1)], dim=-1)
+                
             alphas = torch.stack([alphas for _ in range(2)], dim=0)
             values = []
             
