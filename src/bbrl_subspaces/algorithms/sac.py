@@ -405,6 +405,7 @@ class SAC:
 
                 if visualizer is not None:
                     info["anchors_similarities"] = current_actor.agent.get_similarities()
+                    info["subspace_area"] = current_actor.agent.subspace_area()
                     # n_anchors = eval_agent.agent.agents[1][0].n_anchors
                     # # Estimating best alphas in the subspace using K-shot adaptation with K the number of rollouts
                     # alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([self.cfg.algorithm.n_estimations]))

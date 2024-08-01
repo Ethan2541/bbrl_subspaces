@@ -182,8 +182,7 @@ class SubspaceVisualizer:
         cbar.set_label("Reward")
 
         # Add legend
-        if n_steps is None:
-            plt.legend(loc="upper right")
+        plt.legend(loc="upper right")
 
         title_steps_str = f" at step {n_steps:,d}" if n_steps is not None else ""
         plt.title(f"{self.algorithm_name} Subspace Rewards for {self.env_name}" + title_steps_str)

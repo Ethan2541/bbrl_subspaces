@@ -509,15 +509,15 @@ class IntuitiveSubspaceAction(SubspaceAgent):
     
 
     def subspace_area(self, **kwargs):
-        anchors = self.get_subspace_anchors()
-        if len(anchors) != 3:
-            return None
         with torch.no_grad():
+            anchors = self.get_subspace_anchors()
+            if len(anchors) != 3:
+                return None
             anchors_euclidean_distances = self.euclidean_distances()
-        x, y, z = anchors_euclidean_distances["π1, π3"].item(), anchors_euclidean_distances["π2, π3"].item(), anchors_euclidean_distances["π1, π2"].item()
-        d = (x + y + z) / 2
-        subspace_area = np.sqrt(d*(d-x)*(d-y)*(d-z))
-        return subspace_area
+            x, y, z = anchors_euclidean_distances["π1, π3"].item(), anchors_euclidean_distances["π2, π3"].item(), anchors_euclidean_distances["π1, π2"].item()
+            d = (x + y + z) / 2
+            subspace_area = np.sqrt(d*(d-x)*(d-y)*(d-z))
+            return subspace_area
     
 
     def get_similarities(self, **kwargs):
