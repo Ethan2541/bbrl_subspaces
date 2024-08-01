@@ -23,7 +23,7 @@ class AlphaAgent(SubspaceAgent):
     repeat_alpha: number of consecutive steps a sampled alphas vector should be used
     """
 
-    def __init__(self, n_initial_anchors, dist_type="flat", refresh_rate=1., resampling_policy=True, repeat_alpha=1000):
+    def __init__(self, n_initial_anchors, dist_type="flat", refresh_rate=1., resampling_policy=True, repeat_alpha=1000, **kwargs):
         super().__init__()
         self.n_anchors = n_initial_anchors
         self.dist_type = dist_type
@@ -57,7 +57,7 @@ class AlphaAgent(SubspaceAgent):
                 self.set(("tracking_reward", t),tracking_reward)
 
 
-    def forward(self, t=None, force_random=False, policy_update=False, alphas=None, mute_alpha=False, **args):
+    def forward(self, t=None, force_random=False, policy_update=False, alphas=None, mute_alpha=False, **kwargs):
         if mute_alpha:
             pass
         self.track_reward(t)
@@ -170,7 +170,7 @@ class SubspaceAction(SubspaceAgent):
     only_head: the model only has the last layer of the usual networks
     """
 
-    def __init__(self, n_initial_anchors, input_dimension, output_dimension, hidden_size, start_steps=0, input_name="env/env_obs", only_head=False):
+    def __init__(self, n_initial_anchors, input_dimension, output_dimension, hidden_size, start_steps=0, input_name="env/env_obs", only_head=False, **kwargs):
         super().__init__()
         self.start_steps = start_steps
         self.counter = 0
@@ -347,7 +347,7 @@ class AlphaCritic(SubspaceAgent):
     input_name: name of the variable with the observations
     output_name: name of the variable with the Q values
     """
-    def __init__(self, n_anchors, obs_dimension, action_dimension, hidden_size, input_name="env/env_obs", output_name="q_values"):
+    def __init__(self, n_anchors, obs_dimension, action_dimension, hidden_size, input_name="env/env_obs", output_name="q_values", **kwargs):
         super().__init__()
         self.iname = input_name
         self.n_anchors = n_anchors
@@ -395,3 +395,136 @@ class AlphaCritic(SubspaceAgent):
         if logger is not None:
             logger = logger.get_logger(type(self).__name__ + str("/"))
             logger.message("Setting input size to " + str(self.input_size) + " and reinitializing network")
+
+
+
+
+from bbrl_algos.models.stochastic_actors import SquashedGaussianActor
+from torch.nn import CosineSimilarity
+
+class IntuitiveSubspaceAction(SubspaceAgent):
+    """ An intuitive agent used to act based on multiple policies, given their respective weights.
+
+    Parameters
+    ----------
+    n_initial_anchors: number of policies that define the initial subspace
+    input_dimension
+    output_dimension
+    hidden_size: size of the networks' hidden layers
+    start_steps: number of steps before the beginning of the actual training
+    input_name: name of the variable with the observations
+    only_head: the model only has the last layer of the usual networks
+    """
+
+    def __init__(self, n_initial_anchors, input_dimension, output_dimension, hidden_size, start_steps=0, input_name="env/env_obs", **kwargs):
+        super().__init__()
+        self.start_steps = start_steps
+        self.counter = 0
+        self.iname = input_name
+        self.n_anchors = n_initial_anchors
+        self.input_size = input_dimension
+        self.output_dimension = output_dimension
+        self.hs = hidden_size
+
+        self.anchors = [SquashedGaussianActor(self.input_size, self.hs, self.output_dimension) for _ in range(self.n_anchors)]
+
+
+
+    def forward(self, t=None, policy_update=False, predict_proba=False, **kwargs):
+        # Outside of training, the output is the linear combination of the anchors' outputs, given their respective weights alphas
+        if not self.training:
+            x = self.get((self.iname, t))
+            alphas = self.get(("alphas", t))
+            mu, _ = self.model(x, alphas).chunk(2, dim=-1)
+            action = torch.tanh(mu)
+            self.set(("action", t), action)
+
+        else:
+            x = self.get((self.iname, t))
+            alphas = self.get(("alphas", t))
+            # Before threshold, action is random
+            if self.counter <= self.start_steps:
+                action = torch.rand(x.shape[0], self.output_dimension)*2 - 1
+            else:
+                # In SAC, predict_proba is used conversely with stochastic
+                xs = [anchor(x, stochastic=predict_proba) for anchor in self.anchors]
+                xs = torch.stack(xs, dim=-1)
+                alpha = torch.stack([alpha] * self.out_channels, dim=-2)
+                action = (xs * alpha).sum(-1)
+            self.set(("action", t), action)
+            self.counter += 1
+
+
+    def add_anchor(self, alpha=None, logger=None, **kwargs):
+        i = 0
+        alphas = [alpha] * (self.hs + 2)
+        if logger is not None:
+            logger = logger.get_logger(type(self).__name__+str("/"))
+            if alpha is None:
+                logger.message("Adding one anchor with alpha = None")
+            else:
+                logger.message("Adding one anchor with alpha = " + str(list(map(lambda x: round(x,2), alpha.tolist()))))
+
+        # Adding an anchor to each subspace layer, with the proper weight alpha
+        self.anchors.append(SquashedGaussianActor(self.input_size, self.hs, self.output_dimension))
+        self.n_anchors += 1
+
+
+    def remove_anchor(self, logger = None, **kwargs):
+        if logger is not None:
+            logger = logger.get_logger(type(self).__name__ + str("/"))
+            logger.message("Removing last anchor")
+        
+        del self.anchors[-1]
+        self.n_anchors -= 1
+
+
+    def cosine_similarities(self, **kwargs):
+        n = 0
+        cosine_similarities = {}
+        cosine_similarity_function = CosineSimilarity()
+        anchors = self.get_subspace_anchors()
+        # The cosine similarities are the respective mean of each network layer's cosine similarities
+        for i in range(self.n_anchors):
+            for j in range(i+1, self.n_anchors):
+                policy_i = torch.nn.utils.parameters_to_vector(anchors[i].parameters())
+                policy_j = torch.nn.utils.parameters_to_vector(anchors[j].parameters())
+                cosine_similarities[f"π{i+1}, π{j+1}"] = cosine_similarity_function(policy_i, policy_j)
+        return {key: similarity/n for key, similarity in cosine_similarities.items()}
+    
+
+    def get_subspace_anchors(self, **kwargs):
+        return self.anchors
+    
+
+    def euclidean_distances(self, **kwargs):
+        euclidean_distances = {}
+        anchors = self.get_subspace_anchors()
+        for i in range(self.n_anchors):
+            for j in range(i+1, self.n_anchors):
+                policy_i = torch.nn.utils.parameters_to_vector(anchors[i].parameters())
+                policy_j = torch.nn.utils.parameters_to_vector(anchors[j].parameters())
+                euclidean_distances[f"π{i+1}, π{j+1}"] = torch.norm(policy_i - policy_j, p=2)
+        return euclidean_distances
+    
+
+    def subspace_area(self, **kwargs):
+        anchors = self.get_subspace_anchors()
+        if len(anchors) != 3:
+            return None
+        with torch.no_grad():
+            anchors_euclidean_distances = self.euclidean_distances()
+        x, y, z = anchors_euclidean_distances["π1, π3"].item(), anchors_euclidean_distances["π2, π3"].item(), anchors_euclidean_distances["π1, π2"].item()
+        d = (x + y + z) / 2
+        subspace_area = np.sqrt(d*(d-x)*(d-y)*(d-z))
+        return subspace_area
+    
+
+    def get_similarities(self, **kwargs):
+        with torch.no_grad():
+            similarities = "Similarities of the anchors:"
+            for key, similarity in self.cosine_similarities().items():
+                similarities += f"\ncos({key}) = {round(similarity.item(), 2)}"
+            for key, distance in self.euclidean_distances().items():
+                similarities += f"\nL2({key}) = {round(distance.item(), 2)}"
+            return similarities

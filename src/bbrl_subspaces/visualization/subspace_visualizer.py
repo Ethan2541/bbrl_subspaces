@@ -93,13 +93,24 @@ class SubspaceVisualizer:
 
         logger.message(f"Evaluating the rewards for different policies ({self.num_points} points sampled per edge)")
         _plotting_start_time = time.time()
+
+        max_reward = -float("inf")
+        best_alpha = None
         for i in range(len(x_points)):
             if is_inside_triangle([x_points[i], y_points[i]], [0, 0], [1, 0], [0.5, np.sqrt(3) / 2]):
                 if x_points[i] != 0.5 and y_points[i] != np.sqrt(3)/2:
                     alpha = get_alphas_from_point(x_points[i], y_points[i])
                     reward = evaluate_agent(eval_agent, alpha)
+                    if reward > max_reward:
+                        max_reward = reward
+                        best_alpha = alpha
                     alpha_reward_list.append((alpha, reward))
                     cpt += 1
+
+        # Best Policy Estimation for intermediary plots
+        if n_steps is not None:
+            info["best_alpha"] = best_alpha
+            info["best_alpha_reward"] = max_reward
 
         logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
 

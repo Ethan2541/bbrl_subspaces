@@ -13,7 +13,7 @@ from numpy import cos, pi, sin
 import gymnasium as gym
 from gymnasium import Env, spaces
 from gymnasium.envs.classic_control import utils
-from gymnasium.envs.classic_control.acrobot import AcrobotEnv, bound, rk4, wrap
+from gymnasium.envs.classic_control.acrobot import AcrobotEnv, bound, wrap
 from gymnasium.error import DependencyNotInstalled
 
 
@@ -58,7 +58,7 @@ class ContinuousAcrobotSubspaceEnv(AcrobotEnv):
     def step(self, a):
         s = self.state
         assert s is not None, "Call reset before using AcrobotEnv object."
-        torque = self.AVAIL_TORQUE[a]
+        torque = a[0]
 
         # Add noise to the force action
         if self.torque_noise_max > 0:
@@ -80,11 +80,13 @@ class ContinuousAcrobotSubspaceEnv(AcrobotEnv):
         terminated = self._terminal()
         reward = -1.0 if not terminated else 0.0
 
+        # Reward shaping
+        reward += -cos(self.state[0]) - cos(self.state[1] + self.state[0])
+
         if self.render_mode == "human":
             self.render()
         # truncation=False as the time limit is handled by the `TimeLimit` wrapper added during `make`
         return self._get_ob(), reward, terminated, False, {}
-
 
 
     def _dsdt(self, s_augmented):
@@ -123,3 +125,29 @@ class ContinuousAcrobotSubspaceEnv(AcrobotEnv):
             ) / (m2 * lc2**2 + I2 - d2**2 / d1)
         ddtheta1 = -(d2 * ddtheta2 + phi1) / d1
         return dtheta1, dtheta2, ddtheta1, ddtheta2, 0.0
+    
+
+
+def rk4(derivs, y0, t):
+    try:
+        Ny = len(y0)
+    except TypeError:
+        yout = np.zeros((len(t),), np.float64)
+    else:
+        yout = np.zeros((len(t), Ny), np.float64)
+
+    yout[0] = y0
+
+    for i in np.arange(len(t) - 1):
+        this = t[i]
+        dt = t[i + 1] - this
+        dt2 = dt / 2.0
+        y0 = yout[i]
+
+        k1 = np.asarray(derivs(y0))
+        k2 = np.asarray(derivs(y0 + dt2 * k1))
+        k3 = np.asarray(derivs(y0 + dt2 * k2))
+        k4 = np.asarray(derivs(y0 + dt * k3))
+        yout[i + 1] = y0 + dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+    # We only care about the final timestep and we cleave off action value which will be zero
+    return yout[-1][:4]
