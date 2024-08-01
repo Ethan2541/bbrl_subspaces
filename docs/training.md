@@ -32,7 +32,7 @@ $$cos(u,v) = \frac{u\cdot v}{||u|| ||v||}$$
 2. **Euclidean Distance**
 $$L_2(u,v) = ||u-v||_2$$
 
-Here, we only consider the pairwise cosine similarities, and add their sum as a penalty term for the actor loss. The sum is weighted by an **anticollapse coefficient**: the greater it is, the more different the anchors should be.
+Here, we only consider the pairwise euclidean distances, and add their sum as a penalty term for the actor loss. The sum is weighted by an **anticollapse coefficient**: the greater it is, the more different the anchors should be.
 
 
 ## Best policy estimation

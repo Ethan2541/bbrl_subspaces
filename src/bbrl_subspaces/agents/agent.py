@@ -286,35 +286,27 @@ class SubspaceAction(SubspaceAgent):
                 # Bias + Weight
                 n += 2
         return {key: similarity/n for key, similarity in cosine_similarities.items()}
-    
 
-    def get_subspace_anchors(self, **kwargs):
-        anchors = {}
-        for anchor_id in range(self.n_anchors):
-            layers = []
-            for module in self.model:
-                if isinstance(module, LinearSubspace):
-                    layers.append(copy.deepcopy(module.anchors[anchor_id]))
-                else:
-                    layers.append(copy.deepcopy(module))
-            anchors[anchor_id] = Sequential(*layers)
-        return anchors
-    
 
     def euclidean_distances(self, **kwargs):
         euclidean_distances = {}
-        anchors = self.get_subspace_anchors()
+
+        for subspace in self.model:
+            if isinstance(subspace, LinearSubspace):
+                subspace_parameters = {}
+                for i in range(subspace.n_anchors):
+                    subspace_parameters[i] = torch.cat([subspace_parameters.get(i, torch.Tensor([])), torch.nn.utils.parameters_to_vector(subspace.anchors[i].parameters())])
+
         for i in range(self.n_anchors):
             for j in range(i+1, self.n_anchors):
-                policy_i = torch.nn.utils.parameters_to_vector(anchors[i].parameters())
-                policy_j = torch.nn.utils.parameters_to_vector(anchors[j].parameters())
+                policy_i = subspace_parameters[i]
+                policy_j = subspace_parameters[j]
                 euclidean_distances[f"π{i+1}, π{j+1}"] = torch.norm(policy_i - policy_j, p=2)
         return euclidean_distances
     
 
     def subspace_area(self, **kwargs):
-        anchors = self.get_subspace_anchors()
-        if len(anchors) != 3:
+        if self.n_anchors != 3:
             return None
         with torch.no_grad():
             anchors_euclidean_distances = self.euclidean_distances()
@@ -399,6 +391,10 @@ class AlphaCritic(SubspaceAgent):
 
 
 
+# ---------------------------------- #
+# Intuitive Subspace Agent Prototype #
+# ---------------------------------- #
+
 from bbrl_algos.models.stochastic_actors import SquashedGaussianActor
 from torch.nn import CosineSimilarity
 
@@ -482,35 +478,28 @@ class IntuitiveSubspaceAction(SubspaceAgent):
         n = 0
         cosine_similarities = {}
         cosine_similarity_function = CosineSimilarity()
-        anchors = self.get_subspace_anchors()
         # The cosine similarities are the respective mean of each network layer's cosine similarities
         for i in range(self.n_anchors):
             for j in range(i+1, self.n_anchors):
-                policy_i = torch.nn.utils.parameters_to_vector(anchors[i].parameters())
-                policy_j = torch.nn.utils.parameters_to_vector(anchors[j].parameters())
+                policy_i = torch.nn.utils.parameters_to_vector(self.anchors[i].parameters())
+                policy_j = torch.nn.utils.parameters_to_vector(self.anchors[j].parameters())
                 cosine_similarities[f"π{i+1}, π{j+1}"] = cosine_similarity_function(policy_i, policy_j)
         return {key: similarity/n for key, similarity in cosine_similarities.items()}
     
 
-    def get_subspace_anchors(self, **kwargs):
-        return self.anchors
-    
-
     def euclidean_distances(self, **kwargs):
         euclidean_distances = {}
-        anchors = self.get_subspace_anchors()
         for i in range(self.n_anchors):
             for j in range(i+1, self.n_anchors):
-                policy_i = torch.nn.utils.parameters_to_vector(anchors[i].parameters())
-                policy_j = torch.nn.utils.parameters_to_vector(anchors[j].parameters())
+                policy_i = torch.nn.utils.parameters_to_vector(self.anchors[i].parameters())
+                policy_j = torch.nn.utils.parameters_to_vector(self.anchors[j].parameters())
                 euclidean_distances[f"π{i+1}, π{j+1}"] = torch.norm(policy_i - policy_j, p=2)
         return euclidean_distances
     
 
     def subspace_area(self, **kwargs):
         with torch.no_grad():
-            anchors = self.get_subspace_anchors()
-            if len(anchors) != 3:
+            if self.n_anchors != 3:
                 return None
             anchors_euclidean_distances = self.euclidean_distances()
             x, y, z = anchors_euclidean_distances["π1, π3"].item(), anchors_euclidean_distances["π2, π3"].item(), anchors_euclidean_distances["π1, π2"].item()

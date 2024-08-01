@@ -126,12 +126,6 @@ class SubspaceAgents(Agents):
             if similarities is not None:
                 return similarities
         return None
-    def get_subspace_anchors(self, **kwargs):
-        for agent in self:
-            anchors = agent.get_subspace_anchors()
-            if anchors is not None:
-                return anchors
-        return None
 
 
 
@@ -151,8 +145,6 @@ class SubspaceAgent(Agent):
     def subspace_area(self, **kwargs):
         return None
     def get_similarities(self, **kwargs):
-        return None
-    def get_subspace_anchors(self, **kwargs):
         return None
 
 
