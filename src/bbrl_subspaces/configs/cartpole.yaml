@@ -38,7 +38,7 @@ framework:
                               torch: 789
                         nb_seeds: 1
                         n_steps_train: 32
-                        n_steps: 300_000
+                        n_steps: 100_000
                         max_grad_norm: 0.5
                         buffer_size: 1e6
                         batch_size: 256
@@ -88,7 +88,7 @@ framework:
             classname: bbrl_subspaces.algorithms.AlphaSearch
             n_rollouts: 32
             n_samples: 1024
-            n_validation_steps: 200
+            n_validation_steps: 500
             seed: 0
             prune_subspace: False
 
@@ -102,4 +102,4 @@ framework:
             env_name: ${scenario.base_env.env_name}
             num_points: 40
             interactive: False
-            thresholds: [150_000]
+            thresholds: []

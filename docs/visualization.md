@@ -19,7 +19,7 @@ The first kind of figures that is plotted during an execution is the reward curv
 
 Subspaces with exactly 3 anchors can also be represented as triangles whose vertices are the subspace anchors. Sampling policies within this triangle (the actual number depends on the `num_points` hyperparameter) and evaluating them allows to get a heatmap of the local performances of the subspace.
 
-During a single training, several visualizations can be saved at different timesteps thanks to the `thresholds` hyperparameter. Anyway, the subspace is plotted at the end of [best policy estimation](./pruning.md) phase. In this case, the best policy of the subspace is displayed as well.
+During a single training, several visualizations can be saved at different timesteps thanks to the `thresholds` hyperparameter. Anyway, the subspace is plotted at the end of [best policy estimation](./pruning.md) phase. In this case, the best estimated policy of the subspace, which isn't necessary part of the sampled points, is displayed as well. In intermediary plots, the star marker rather refers to the sampled policy that performed best during the construction of the plot.
 
 Finally, it is also possible to get an interactive view of the subspace with `Plotly` by setting the `interactive` hyperparameter to `True`.
 

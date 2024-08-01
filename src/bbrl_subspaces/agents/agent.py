@@ -424,8 +424,7 @@ class IntuitiveSubspaceAction(SubspaceAgent):
         self.n_anchors = n_initial_anchors
         self.input_size = input_dimension
         self.output_dimension = output_dimension
-        self.hs = hidden_size
-
+        self.hs = [hidden_size] * 2
         self.anchors = [SquashedGaussianActor(self.input_size, self.hs, self.output_dimension) for _ in range(self.n_anchors)]
 
 
@@ -447,7 +446,7 @@ class IntuitiveSubspaceAction(SubspaceAgent):
                 action = torch.rand(x.shape[0], self.output_dimension)*2 - 1
             else:
                 # In SAC, predict_proba is used conversely with stochastic
-                xs = [anchor(x, stochastic=predict_proba) for anchor in self.anchors]
+                xs = [anchor.forward(t, stochastic=predict_proba) for anchor in self.anchors]
                 xs = torch.stack(xs, dim=-1)
                 alpha = torch.stack([alpha] * self.out_channels, dim=-2)
                 action = (xs * alpha).sum(-1)

@@ -124,6 +124,7 @@ class AlphaSearch:
             logger.message("Acquisition ended")
 
             cumulative_rewards, cumulative_rewards_before_training =  w["env/cumulated_reward"][-1].chunk(2)
+
             best_reward = cumulative_rewards.max().item()
             best_reward_before_training = cumulative_rewards_before_training.max().item()
             

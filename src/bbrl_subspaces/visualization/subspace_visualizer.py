@@ -151,7 +151,7 @@ class SubspaceVisualizer:
         norm = plt.Normalize(vmin=min(rewards_list), vmax=max(rewards_list))
         norm = mcolors.Normalize(vmin=min(rewards_list), vmax=max(rewards_list))
         # For CartPole: set the colorbar between 0 and 500
-        if self.env_name == "CartPoleContinuous-v1":
+        if "CartPole" in self.env_name:
             norm = mcolors.Normalize(vmin=0, vmax=500)
 
         # Choose a colormap that covers the entire range of rewards

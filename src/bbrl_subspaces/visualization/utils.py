@@ -58,7 +58,7 @@ def generate_lower_edge_points(num_points):
 
 
 def get_alphas_from_point(x, y):
-    triangle_vertices = [[0, 0],[1, 0], [0.5, np.sqrt(3)/2]]
+    triangle_vertices = [[0, 0], [1, 0], [0.5, np.sqrt(3)/2]]
     A = np.vstack([triangle_vertices[0], triangle_vertices[1], triangle_vertices[2]]).T
     A = np.vstack([A, np.ones(3)])
     b = np.array([x, y, 1])  
@@ -85,4 +85,8 @@ def is_inside_triangle(point, A, B, C):
 def get_point_from_alphas(alphas, vertices):
     # alphas is a 1xN vector, vertices is a stack of row vectors, whose each row is the coordinates of a tip of the subspace
     # returns a point of dimension (2,)
+    print(alphas)
+    print(vertices)
+    print(alphas @ vertices)
+    print((alphas @ vertices).reshape(-1))
     return (alphas @ vertices).reshape(-1)
