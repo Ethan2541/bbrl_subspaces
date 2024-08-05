@@ -30,6 +30,7 @@ framework:
             name: "SAC"
             env_name: ${scenario.base_env.env_name}
             params:
+                  plot_reward_curves: True
                   save_best: False
                   algorithm:
                         seed:
@@ -51,7 +52,7 @@ framework:
                         avg_reward_interval: 5000
                         n_samples: ${scenario.base_env.nb_evals}
                         n_estimations: ${framework.alpha_search.n_samples}
-                        anticollapse_coef: -10.0
+                        anticollapse_coef: 0.001
 
                   actor_optimizer:
                         classname: torch.optim.Adam

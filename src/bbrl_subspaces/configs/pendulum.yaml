@@ -30,6 +30,7 @@ framework:
             name: "SAC"
             env_name: ${scenario.base_env.env_name}
             params:
+                  plot_reward_curves: True
                   save_best: False
                   algorithm:
                         seed:

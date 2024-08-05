@@ -2,8 +2,8 @@
 # LICENSE file in the root directory of this source tree.
 #
 import copy
-
 import torch
+
 from bbrl import instantiate_class
 from bbrl.workspace import Workspace
 from bbrl.agents import Agents, TemporalAgent

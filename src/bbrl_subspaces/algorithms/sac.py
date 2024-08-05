@@ -24,6 +24,7 @@ from bbrl_subspaces.logger import Logger
 
 import matplotlib
 import os
+import pandas as pd
 import time
 
 matplotlib.use("TkAgg")
@@ -34,10 +35,6 @@ class SAC:
         self.name = name
         self.env_name = env_name
         self.cfg = params
-
-        output_path = "./figures/reward_curves"
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
 
 
     # Create the SAC Agent
@@ -199,14 +196,12 @@ class SAC:
         actor_loss = ent_coef * action_logprobs_new[0] - current_q_values[0]
         logger.add_log("rl_loss", actor_loss.mean(), nb_steps)
 
-        # Adding a penalty to ensure that the policies are different enough to prevent the subspace from collapsing
+        # Adding a penalty term to ensure that the policies are different enough to prevent the subspace from collapsing
+        # A positive anticollapse coefficient increases the distance between the anchors, while a negative coefficient decreases it
         penalty = sum(list(current_actor.agent.euclidean_distances().values()))
         logger.add_log("distance_loss", penalty, nb_steps)
-
         actor_loss -= self.cfg.algorithm.anticollapse_coef * penalty
 
-        # print(current_actor.agent[1].model[0].anchors[0].weight.grad)
-        
         return actor_loss.mean()
 
 
@@ -330,7 +325,7 @@ class SAC:
                 )
                 actor_optimizer.step()
 
-                # Entropy coef update part #
+                # Entropy coef update part
                 if entropy_coef_optimizer is not None:
                     # See Eq. (17) of the SAC and Applications paper
                     # log. probs have been computed when computing the actor loss
@@ -406,22 +401,6 @@ class SAC:
                 if visualizer is not None:
                     info["anchors_similarities"] = current_actor.agent.get_similarities()
                     info["subspace_area"] = current_actor.agent.subspace_area()
-                    # n_anchors = eval_agent.agent.agents[1][0].n_anchors
-                    # # Estimating best alphas in the subspace using K-shot adaptation with K the number of rollouts
-                    # alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([self.cfg.algorithm.n_estimations]))
-                    # # Get a list of n_estimations elements, which are Q-values tensors of size n_rollouts
-                    # for _ in range(self.cfg.algorithm.n_estimations):
-                    #     replay_workspace = rb.get_shuffled(alphas.shape[1])
-                    #     replay_workspace.set_full("alphas", alphas)
-                    #     with torch.no_grad():
-                    #         critic_1(replay_workspace)
-                    #     values.append(replay_workspace["critic-1/q_values"].mean(0))
-                    # # Get the average Q-values for each rollout and sort them
-                    # values = torch.stack(values, dim=0).mean(0)
-                    # sorted_values_indices = values.argsort(descending=True)
-                    # best_alphas = alphas[0, sorted_values_indices]
-                    # info["best_alphas"] = best_alphas
-                    # del replay_workspace
                     visualizer.plot_subspace(
                         TemporalAgent(Agents(copy.deepcopy(eval_env_agent), copy.deepcopy(actor))), logger, info, nb_steps
                     )
@@ -437,19 +416,32 @@ class SAC:
         now = datetime.now()
         date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
 
-        fig = plt.figure(figsize=(10, 5))
-        plt.plot(n_steps_average_rewards, average_subspace_rewards, c="blue", label="Average subspace reward", linewidth=0.75, zorder=1)
-        plt.scatter(n_steps_average_rewards, average_subspace_rewards, c=subspace_areas, cmap="viridis", s=20, zorder=2)
-        plt.plot(n_steps_average_rewards, max_subspace_rewards, c="red", linestyle="dashed", marker="o", markersize=4, label="Maximum subspace reward", linewidth=0.75, zorder=1)
-        cbar = plt.colorbar()
-        cbar.set_label("Subspace Area", rotation=270, labelpad=15)
-        plt.xlabel("Number of steps")
-        plt.ylabel("Reward")
-        plt.title(f"Subspace reward over time ({self.cfg.algorithm.n_samples} samples, anticollapse coefficient = {self.cfg.algorithm.anticollapse_coef})")
-        plt.legend()
-        plt.savefig(f"./figures/reward_curves/{self.env_name}_{self.name}_Reward_Curve_{date_time}.png")
+        # Plot the reward curves
+        if self.cfg.plot_reward_curves:
+            output_path = "./figures/reward_curves"
+            if not os.path.exists(output_path):
+                os.makedirs(output_path)
 
-        # Arbitrarily returns the critic_1
+            fig = plt.figure(figsize=(10, 5))
+            plt.plot(n_steps_average_rewards, average_subspace_rewards, c="blue", label="Average subspace reward", linewidth=0.75, zorder=1)
+            plt.scatter(n_steps_average_rewards, average_subspace_rewards, c=subspace_areas, cmap="viridis", s=20, zorder=2)
+            plt.plot(n_steps_average_rewards, max_subspace_rewards, c="red", linestyle="dashed", marker="o", markersize=4, label="Maximum subspace reward", linewidth=0.75, zorder=1)
+            cbar = plt.colorbar()
+            cbar.set_label("Subspace Area", rotation=270, labelpad=15)
+            plt.xlabel("Number of steps")
+            plt.ylabel("Reward")
+            plt.title(f"Subspace reward over time ({self.cfg.algorithm.n_samples} samples, anticollapse coefficient = {self.cfg.algorithm.anticollapse_coef})")
+            plt.legend()
+            plt.savefig(f"./figures/reward_curves/{self.env_name}_{self.name}_Reward_Curve_{date_time}.png")
+
+            df = pd.DataFrame({
+                "anticollapse_coefficient":  [self.cfg.algorithm.anticollapse_coef],
+                "average_subspace_rewards": np.mean(average_subspace_rewards[-20:]),
+                "max_subspace_rewards": np.mean(max_subspace_rewards[-20:]),
+                "subspace_areas": subspace_areas[-1],
+            }).set_index("anticollapse_coefficient")
+            df.to_csv(f"./outputs/reward_curves_{self.env_name}", mode="a")
+
         return r, actor, critic_1, critic_2, info
 
 
