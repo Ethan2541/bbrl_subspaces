@@ -417,7 +417,7 @@ class SAC:
         date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
 
         # Plot the reward curves
-        if self.cfg.plot_reward_curves:
+        if self.cfg.save_reward_curves:
             output_path = "./figures/reward_curves"
             if not os.path.exists(output_path):
                 os.makedirs(output_path)
@@ -435,12 +435,14 @@ class SAC:
             plt.savefig(f"./figures/reward_curves/{self.env_name}_{self.name}_Reward_Curve_{date_time}.png")
 
             df = pd.DataFrame({
-                "anticollapse_coefficient":  [self.cfg.algorithm.anticollapse_coef],
+                "anticollapse_coefficient":  self.cfg.algorithm.anticollapse_coef,
                 "average_subspace_rewards": np.mean(average_subspace_rewards[-20:]),
+                "has_reached_500": any(np.isclose(average_subspace_rewards, 500.0)),
                 "max_subspace_rewards": np.mean(max_subspace_rewards[-20:]),
                 "subspace_areas": subspace_areas[-1],
-            }).set_index("anticollapse_coefficient")
-            df.to_csv(f"./outputs/reward_curves_{self.env_name}", mode="a")
+            })
+            hdr = False if os.path.isfile('filename.csv') else True
+            df.to_csv(f"./outputs/reward_curves_{self.env_name}.csv", mode="a", header=hdr)
 
         return r, actor, critic_1, critic_2, info
 

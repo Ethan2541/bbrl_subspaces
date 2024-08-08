@@ -2,6 +2,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 import copy
+import numpy as np
 import torch
 
 from bbrl import instantiate_class
@@ -15,12 +16,13 @@ from .core import Framework
 class Subspace(Framework):
     """
     Model for the subspace method.
-    """
+    """ 
 
     def __init__(self, seed, train_algorithm, alpha_search, evaluation, visualization):
         super().__init__(seed)
         torch.manual_seed(self.seed)
-        self.train_algorithm = instantiate_class(train_algorithm)
+        self.train_algorithm_cfg = train_algorithm
+        self.train_algorithm = instantiate_class(self.train_algorithm_cfg)
         self.alpha_search = instantiate_class(alpha_search)
         self.evaluation_cfg = evaluation
         self.visualizer = instantiate_class(visualization)
@@ -44,6 +46,36 @@ class Subspace(Framework):
         self.visualizer.plot_subspace(TemporalAgent(Agents(eval_env_agent, self.policy_agent)), logger, info)
         self.visualizer.reset()
         return r1
+    
+
+    def test_anticollapse_coefficients(self, task, logger, anticollapse_coefficients=[0, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0, 50.0], train_seeds=[123, 456, 789, 101112, 131415], eval_seeds=[161718, 192021, 222324, 252627, 282930]):
+        task_id = task.task_id()
+        info = {"task_id": task_id}
+        if task_id > 0:
+            self.alpha_search.is_initial_task = False
+            self.policy_agent.add_anchor(logger=logger)
+            self.critic_agent_1.add_anchor(n_anchors=self.policy_agent[0].n_anchors, logger=logger)
+            self.critic_agent_2.add_anchor(n_anchors=self.policy_agent[0].n_anchors, logger=logger)
+
+        for train_seed, eval_seed in zip(train_seeds, eval_seeds):
+            task._env_agent_cfg.seed.train = train_seed
+            task._env_agent_cfg.seed.eval = eval_seed
+            for anticollapse_coefficient in anticollapse_coefficients:
+                logger.message(f"Setting the anticollapse coefficient to {anticollapse_coefficient}")
+                cfg = self.train_algorithm_cfg
+                cfg.params.algorithm.anticollapse_coef = float(anticollapse_coefficient)
+                train_algorithm = instantiate_class(cfg)
+                self.reset_agents()
+                train_env_agent, eval_env_agent, alpha_env_agent = task.make()
+                r1, self.policy_agent, self.critic_agent_1, self.critic_agent_2, info = train_algorithm.run(train_env_agent, eval_env_agent, self.policy_agent, self.critic_agent_1, self.critic_agent_2, logger, visualizer=self.visualizer)
+                self.visualizer.reset()
+        return r1
+    
+
+    def reset_agents(self):
+        self.policy_agent = None
+        self.critic_agent_1 = None
+        self.critic_agent_2 = None
 
 
     def memory_size(self):

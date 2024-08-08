@@ -27,12 +27,38 @@ class GymScenario(Scenario):
                 #     masscart: mass of the cart
                 #     masspole: mass of the pole
                 #     length: length of the pole
-                #     force_mag
+                #     force_mag: intensity of the force applied to the cart
                 #     tau: seconds between state updates
                 match task:
                     case "moon":
                         return {
                             "gravity": 1.6
+                        }
+                    case "hugecart":
+                        return {
+                            "masscart": 10.0
+                        }
+                    case "hugecart_moon":
+                        return {
+                            "masscart": 10.0,
+                            "gravity": 1.6
+                        }
+                    case "tinycart":
+                        return {
+                            "masscart": 0.1
+                        }
+                    case "tinycart_moon":
+                        return {
+                            "masscart": 0.1,
+                            "gravity": 1.6
+                        }
+                    case "shortpole":
+                        return {
+                            "length": 0.25
+                        }
+                    case "longpole":
+                        return {
+                            "length": 1.0
                         }
                     case "normal" | _:
                         return {}
