@@ -28,6 +28,7 @@ def main(cfg):
     scenario = instantiate_class(cfg.scenario)
     stage = framework.get_stage()
     for train_task in scenario.train_tasks()[stage:]:
+        # framework.test_anticollapse_coefficients(train_task, logger, anticollapse_coefficients=[-0.001])
         framework.train(train_task, logger)
         evaluation = framework.evaluate(scenario.test_tasks(), logger)
         metrics = {}
