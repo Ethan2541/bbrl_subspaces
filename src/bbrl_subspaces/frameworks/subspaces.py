@@ -48,7 +48,7 @@ class Subspace(Framework):
         return r1
     
 
-    def test_anticollapse_coefficients(self, task, logger, anticollapse_coefficients=[0, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0, 50.0], train_seeds=[123, 456, 789, 101112, 131415], eval_seeds=[161718, 192021, 222324, 252627, 282930]):
+    def test_anticollapse_coefficients(self, task, logger, anticollapse_coefficients=[-0.001, -0.0005, 0, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0, 50.0], train_seeds=[123, 456, 789, 101112, 131415], eval_seeds=[161718, 192021, 222324, 252627, 282930]):
         task_id = task.task_id()
         info = {"task_id": task_id}
         if task_id > 0:

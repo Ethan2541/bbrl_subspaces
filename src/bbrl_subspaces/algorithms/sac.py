@@ -437,7 +437,6 @@ class SAC:
             df = pd.DataFrame({
                 "anticollapse_coefficient":  [self.cfg.algorithm.anticollapse_coef],
                 "average_subspace_rewards": np.mean(average_subspace_rewards[-20:]),
-                "has_reached_500": any(np.isclose(average_subspace_rewards, 500.0)),
                 "max_subspace_rewards": np.mean(max_subspace_rewards[-20:]),
                 "subspace_areas": subspace_areas[-1],
             }).set_index("anticollapse_coefficient")
