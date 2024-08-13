@@ -151,7 +151,7 @@ class SubspaceAgent(Agent):
 
 # Layer for a group of policies
 class LinearSubspace(nn.Module):
-    def __init__(self, n_anchors, in_channels, out_channels, bias = True, same_init = False, freeze_anchors = True):
+    def __init__(self, n_anchors, in_channels, out_channels, bias=True, same_init=False, freeze_anchors=True):
         super().__init__()
         self.n_anchors = n_anchors
         self.in_channels = in_channels

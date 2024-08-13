@@ -85,8 +85,4 @@ def is_inside_triangle(point, A, B, C):
 def get_point_from_alphas(alphas, vertices):
     # alphas is a 1xN vector, vertices is a stack of row vectors, whose each row is the coordinates of a tip of the subspace
     # returns a point of dimension (2,)
-    print(alphas)
-    print(vertices)
-    print(alphas @ vertices)
-    print((alphas @ vertices).reshape(-1))
     return (alphas @ vertices).reshape(-1)
