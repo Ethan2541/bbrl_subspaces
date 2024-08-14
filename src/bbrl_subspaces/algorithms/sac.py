@@ -436,6 +436,7 @@ class SAC:
 
             df = pd.DataFrame({
                 "anticollapse_coefficient":  [self.cfg.algorithm.anticollapse_coef],
+                "n_steps": self.cfg.algorithm.n_steps,
                 "average_subspace_rewards": np.mean(average_subspace_rewards[-20:]),
                 "max_subspace_rewards": np.mean(max_subspace_rewards[-20:]),
                 "subspace_areas": subspace_areas[-1],
