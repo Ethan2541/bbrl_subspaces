@@ -67,7 +67,7 @@ framework:
                         lr: 1e-3
 
                   policy_agent:
-                        classname: bbrl_subspaces.agents.IntuitiveSubspaceActionAgent
+                        classname: bbrl_subspaces.agents.SubspaceActionAgent
                         hidden_size: 64
                         input_dimension: nil
                         output_dimension: nil
