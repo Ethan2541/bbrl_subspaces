@@ -10,3 +10,10 @@ def SubspaceActionAgent(n_initial_anchors, dist_type, refresh_rate, input_dimens
     return SubspaceAgents(AlphaAgent(n_initial_anchors, dist_type, refresh_rate, resampling_policy, repeat_alpha),
                           SubspaceAction(n_initial_anchors, input_dimension, output_dimension, hidden_size, start_steps)
                           )
+
+def IntuitiveSubspaceActionAgent(n_initial_anchors, dist_type, refresh_rate, input_dimension, output_dimension, hidden_size, start_steps, resampling_policy, repeat_alpha, **kwargs):
+    """ActionAgent that is using "alphas" variable during forward to compute a convex combination of its anchor policies.
+    """
+    return SubspaceAgents(AlphaAgent(n_initial_anchors, dist_type, refresh_rate, resampling_policy, repeat_alpha),
+                          IntuitiveSubspaceAction(n_initial_anchors, input_dimension, output_dimension, hidden_size, start_steps)
+                          )

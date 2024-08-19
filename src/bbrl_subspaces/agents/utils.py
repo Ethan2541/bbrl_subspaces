@@ -166,6 +166,13 @@ class LinearSubspace(nn.Module):
         # Random weights
         else:
             anchors = [nn.Linear(in_channels, out_channels, bias=self.is_bias) for _ in range(n_anchors)]
+            # Random weights on a large initial scale
+            # anchors = []
+            # for _ in range(n_anchors):
+            #     anchor = nn.Linear(in_channels, out_channels, bias=self.is_bias)
+            #     anchor.weight.data = torch.randn(anchor.weight.size(), requires_grad=True)*10
+            #     anchor.bias.data = torch.randn(anchor.bias.size(), requires_grad=True)*10
+            #     anchors.append(anchor)
         
         self.anchors = nn.ModuleList(anchors)
 
@@ -210,7 +217,7 @@ class LinearSubspace(nn.Module):
             new_anchor.bias.data.copy_(new_bias)
         
         self.anchors.append(new_anchor)
-        self.n_anchors +=1
+        self.n_anchors += 1
 
 
     # Anticollapse penalty term as a dictionary

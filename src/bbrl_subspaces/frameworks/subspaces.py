@@ -48,7 +48,7 @@ class Subspace(Framework):
         return r1
     
 
-    def test_anticollapse_coefficients(self, task, logger, anticollapse_coefficients=[-0.001, -0.0005, 0, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0, 50.0], train_seeds=[123, 456, 789, 101112, 131415], eval_seeds=[161718, 192021, 222324, 252627, 282930]):
+    def test_anticollapse_coefficients_over_different_seeds(self, task, logger, anticollapse_coefficients=[-0.001, -0.0005, 0, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0, 50.0], train_seeds=[123, 456, 789, 101112, 131415], eval_seeds=[161718, 192021, 222324, 252627, 282930]):
         task_id = task.task_id()
         info = {"task_id": task_id}
         if task_id > 0:
@@ -68,7 +68,28 @@ class Subspace(Framework):
                 self.reset_agents()
                 train_env_agent, eval_env_agent, alpha_env_agent = task.make()
                 r1, self.policy_agent, self.critic_agent_1, self.critic_agent_2, info = train_algorithm.run(train_env_agent, eval_env_agent, self.policy_agent, self.critic_agent_1, self.critic_agent_2, logger, visualizer=self.visualizer)
-                self.visualizer.reset()
+        return r1
+
+
+    def test_anticollapse_coefficients_over_different_steps(self, task, logger, anticollapse_coefficients=[-0.001, 0, 0.001, 1.0, 10.0, 100.0, 1000.0], n_steps_list=[500_000, 1_000_000, 2_000_000, 3_000_000]):
+        task_id = task.task_id()
+        info = {"task_id": task_id}
+        if task_id > 0:
+            self.alpha_search.is_initial_task = False
+            self.policy_agent.add_anchor(logger=logger)
+            self.critic_agent_1.add_anchor(n_anchors=self.policy_agent[0].n_anchors, logger=logger)
+            self.critic_agent_2.add_anchor(n_anchors=self.policy_agent[0].n_anchors, logger=logger)
+
+        for n_steps in n_steps_list:
+            for anticollapse_coefficient in anticollapse_coefficients:
+                logger.message(f"Setting the anticollapse coefficient to {anticollapse_coefficient}")
+                cfg = self.train_algorithm_cfg
+                cfg.params.algorithm.anticollapse_coef = float(anticollapse_coefficient)
+                cfg.params.algorithm.n_steps = int(n_steps)
+                train_algorithm = instantiate_class(cfg)
+                self.reset_agents()
+                train_env_agent, eval_env_agent, alpha_env_agent = task.make()
+                r1, self.policy_agent, self.critic_agent_1, self.critic_agent_2, info = train_algorithm.run(train_env_agent, eval_env_agent, self.policy_agent, self.critic_agent_1, self.critic_agent_2, logger, visualizer=self.visualizer)
         return r1
     
 
