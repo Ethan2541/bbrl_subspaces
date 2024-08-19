@@ -103,4 +103,7 @@ framework:
             env_name: ${scenario.base_env.env_name}
             num_points: 40
             interactive: False
-            thresholds: []
+            visualize_reward_curves: True
+            visualize_subspace: False
+            reward_curves_thresholds: []
+            subspace_thresholds: []

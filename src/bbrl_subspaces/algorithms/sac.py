@@ -2,12 +2,9 @@
 # LICENSE file in the root directory of this source tree.
 #
 import copy
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
-
-from datetime import datetime
 
 from torch.distributions.dirichlet import Dirichlet
 
@@ -23,8 +20,6 @@ from bbrl_subspaces.agents.utils import SubspaceAgents
 from bbrl_subspaces.logger import Logger
 
 import matplotlib
-import os
-import pandas as pd
 import time
 
 matplotlib.use("TkAgg")
@@ -404,6 +399,9 @@ class SAC:
                     visualizer.plot_subspace(
                         TemporalAgent(Agents(copy.deepcopy(eval_env_agent), copy.deepcopy(actor))), logger, info, nb_steps
                     )
+                    visualizer.plot_reward_curves(
+                        logger, self.cfg.algorithm.anticollapse_coef, self.cfg.algorithm.n_samples, n_steps_average_rewards, average_subspace_rewards, max_subspace_rewards, subspace_areas, step=nb_steps
+                    )
 
         logger.message("Training ended")
         logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")
@@ -412,38 +410,11 @@ class SAC:
         info["subspace_area"] = current_actor.agent.subspace_area()
         info["replay_buffer"] = rb
         r = {"n_epochs": n_epochs, "training_time": time.time() - _training_start_time}
-
-        now = datetime.now()
-        date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
-
-        # Plot the reward curves
-        if self.cfg.save_reward_curves:
-            output_path = "./figures/reward_curves"
-            if not os.path.exists(output_path):
-                os.makedirs(output_path)
-
-            fig = plt.figure(figsize=(10, 5))
-            plt.plot(n_steps_average_rewards, average_subspace_rewards, c="blue", label="Average subspace reward", linewidth=0.75, zorder=1)
-            plt.scatter(n_steps_average_rewards, average_subspace_rewards, c=subspace_areas, cmap="viridis", s=20, zorder=2)
-            plt.plot(n_steps_average_rewards, max_subspace_rewards, c="red", linestyle="dashed", marker="o", markersize=4, label="Maximum subspace reward", linewidth=0.75, zorder=1)
-            cbar = plt.colorbar()
-            cbar.set_label("Subspace Area", rotation=270, labelpad=15)
-            plt.xlabel("Number of steps")
-            plt.ylabel("Reward")
-            plt.title(f"Subspace reward over time ({self.cfg.algorithm.n_samples} samples, anticollapse coefficient = {self.cfg.algorithm.anticollapse_coef})")
-            plt.legend()
-            plt.savefig(f"./figures/reward_curves/{self.env_name}_{self.name}_Reward_Curve_{date_time}.png")
-
-            df = pd.DataFrame({
-                "anticollapse_coefficient":  [self.cfg.algorithm.anticollapse_coef],
-                "average_subspace_rewards": np.mean(average_subspace_rewards[-20:]),
-                "max_subspace_rewards": np.mean(max_subspace_rewards[-20:]),
-                "subspace_areas": subspace_areas[-1],
-            }).set_index("anticollapse_coefficient")
-
-            hdr = False if os.path.isfile(f"./outputs/reward_curves_{self.env_name}.csv") else True
-            df.to_csv(f"./outputs/reward_curves_{self.env_name}.csv", mode="a", header=hdr)
-
+    
+        # Plot the reward curves at the end of the training
+        visualizer.plot_reward_curves(
+            logger, self.cfg.algorithm.anticollapse_coef, self.cfg.algorithm.n_samples, n_steps_average_rewards, average_subspace_rewards, max_subspace_rewards, subspace_areas
+        )
         return r, actor, critic_1, critic_2, info
 
 

@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 
 from datetime import datetime
@@ -17,34 +18,46 @@ from .utils import evaluate_agent, find_axis_through_point, generate_left_edge_p
 
 
 class SubspaceVisualizer:
-    def __init__(self, algorithm_name, env_name, num_points, interactive, thresholds, output_path="./figures/subspace_visualizations", **kwargs):
+    def __init__(self, algorithm_name, env_name, num_points, interactive, visualize_reward_curves, visualize_subspace, reward_curves_thresholds, subspace_thresholds, reward_curves_output_path="./figures/reward_curves", subspace_output_path="./figures/subspace_visualizations", **kwargs):
         self.algorithm_name = algorithm_name
         self.env_name = env_name
         self.is_interactive = interactive
         self.num_points = num_points
-        self.thresholds = thresholds
-        self.current_thresholds = list(self.thresholds)
+        self.visualize_reward_curves = visualize_reward_curves
+        self.visualize_subspace = visualize_subspace
+        self.reward_curves_thresholds = reward_curves_thresholds
+        self.subspace_thresholds = subspace_thresholds
+        self.current_reward_curves_thresholds = list(self.reward_curves_thresholds)
+        self.current_subspace_thresholds = list(self.subspace_thresholds)
 
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-        self.output_path = output_path
+        if not os.path.exists(reward_curves_output_path):
+            os.makedirs(reward_curves_output_path)
+        self.reward_curves_output_path = reward_curves_output_path
+
+        if not os.path.exists(subspace_output_path):
+            os.makedirs(subspace_output_path)
+        self.subspace_output_path = subspace_output_path
 
     
     def reset(self, **kwargs):
-        self.current_thresholds = list(self.thresholds)
+        self.current_reward_curves_thresholds = list(self.reward_curves_thresholds)
+        self.current_subspace_thresholds = list(self.current_subspace_thresholds)
 
 
     def plot_subspace(self, eval_agent, logger, info={}, n_steps=None, **kwargs):
+        if not self.visualize_subspace:
+            return
+        
         logger = logger.get_logger(type(self).__name__ + "/")
         n_subspace_anchors = eval_agent.agent.agents[1][0].n_anchors
 
         # If the number of steps is specified, only plot on thresholds
         if n_subspace_anchors == 3:
             if n_steps is not None:
-                if (len(self.current_thresholds) == 0) or (n_steps < self.current_thresholds[0]):
+                if (len(self.current_subspace_thresholds) == 0) or (n_steps < self.current_subspace_thresholds[0]):
                     return
                 else:
-                    del self.current_thresholds[0]
+                    del self.current_subspace_thresholds[0]
         else:
             # To avoid spamming the logs
             if n_steps is None:
@@ -192,7 +205,7 @@ class SubspaceVisualizer:
         date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
 
         save_path_steps_str = f"_step_{n_steps:,d}" if n_steps is not None else ""
-        save_path = os.path.join(self.output_path, f"{self.env_name}_{self.algorithm_name}_Subspace_Rewards_{date_time}" + save_path_steps_str + ".png")
+        save_path = os.path.join(self.subspace_output_path, f"{self.env_name}_{self.algorithm_name}_Subspace_Rewards_{date_time}" + save_path_steps_str + ".png")
         plt.savefig(save_path)
 
         logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
@@ -307,3 +320,51 @@ class SubspaceVisualizer:
 
         fig = go.Figure(data=[policy_vertices] + new_points, layout=layout)
         fig.show()
+
+
+    def plot_reward_curves(self, logger, anticollapse_coefficient, n_samples, n_steps_average_rewards, average_subspace_rewards, max_subspace_rewards, subspace_areas, step=None):
+        if not self.visualize_reward_curves:
+            return
+        
+        if step is not None:
+            if (len(self.current_reward_curves_thresholds) == 0) or (step < self.current_reward_curves_thresholds[0]):
+                return
+            else:
+                del self.current_reward_curves_thresholds[0]
+
+        logger.message(f"Saving the reward curves figure")
+        _plotting_start_time = time.time()
+        
+        fig = plt.figure(figsize=(10, 5))
+        plt.plot(n_steps_average_rewards, average_subspace_rewards, c="blue", label="Average subspace reward", linewidth=0.75, zorder=1)
+        plt.scatter(n_steps_average_rewards, average_subspace_rewards, c=subspace_areas, cmap="viridis", s=20, zorder=2)
+        plt.plot(n_steps_average_rewards, max_subspace_rewards, c="red", linestyle="dashed", marker="o", markersize=4, label="Maximum subspace reward", linewidth=0.75, zorder=1)
+        cbar = plt.colorbar()
+        cbar.set_label("Subspace Area", rotation=270, labelpad=15)
+        plt.xlabel("Number of steps")
+        plt.ylabel("Reward")
+        plt.title(f"Subspace reward over time ({n_samples} samples, anticollapse coefficient = {anticollapse_coefficient})")
+        plt.legend()
+
+        now = datetime.now()
+        date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+        save_path_steps_str = f"_step_{step:,d}" if step is not None else ""
+        save_path = os.path.join(self.reward_curves_output_path, f"{self.env_name}_{self.algorithm_name}_Reward_Curves_{date_time}" + save_path_steps_str + ".png")
+        plt.savefig(save_path)
+
+        logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
+
+        # if step is None:
+        #     step = n_steps_average_rewards[-1]
+
+        # df = pd.DataFrame({
+        #     "anticollapse_coefficient":  [anticollapse_coefficient],
+        #     "step": step,
+        #     "average_subspace_rewards": np.mean(average_subspace_rewards[-20:]),
+        #     "max_subspace_rewards": np.mean(max_subspace_rewards[-20:]),
+        #     "subspace_areas": subspace_areas[-1],
+        # }).set_index("anticollapse_coefficient")
+
+        # hdr = False if os.path.isfile(f"./outputs/reward_curves_{self.env_name}.csv") else True
+        # df.to_csv(f"./outputs/reward_curves_{self.env_name}.csv", mode="a", header=hdr)
