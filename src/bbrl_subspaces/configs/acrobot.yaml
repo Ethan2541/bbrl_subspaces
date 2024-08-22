@@ -53,6 +53,9 @@ framework:
                         n_samples: ${scenario.base_env.nb_evals}
                         n_estimations: ${framework.alpha_search.n_samples}
                         anticollapse_coef: 1.0
+                        n_policies: 1
+                        policy_update_delay: 1
+                        target_update_delay: 1
 
                   actor_optimizer:
                         classname: torch.optim.Adam
@@ -102,4 +105,7 @@ framework:
             env_name: ${scenario.base_env.env_name}
             num_points: 40
             interactive: False
-            thresholds: [100_000, 300_000, 500_000, 700_000, 900_000]
+            visualize_reward_curves: True
+            visualize_subspace: False
+            reward_curves_thresholds: []
+            subspace_thresholds: []

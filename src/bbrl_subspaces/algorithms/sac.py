@@ -276,68 +276,72 @@ class SAC:
             rb.put(transition_workspace)
 
             if nb_steps > self.cfg.algorithm.learning_starts:
-                # Get a sample from the workspace
-                rb_workspace = rb.get_shuffled(self.cfg.algorithm.batch_size)
+                # Sample a given number of policies from the subspace
+                for _ in range(self.cfg.algorithm.n_policies):
+                    # Get a sample from the workspace
+                    rb_workspace = rb.get_shuffled(self.cfg.algorithm.batch_size)
 
-                terminated, reward = rb_workspace["env/terminated", "env/reward"]
-                if entropy_coef_optimizer is not None:
-                    ent_coef = torch.exp(log_entropy_coef.detach())
+                    terminated, reward = rb_workspace["env/terminated", "env/reward"]
+                    if entropy_coef_optimizer is not None:
+                        ent_coef = torch.exp(log_entropy_coef.detach())
 
-                # Critic update
-                critic_optimizer.zero_grad()
+                    # Critic update
+                    critic_optimizer.zero_grad()
 
-                (critic_loss_1, critic_loss_2) = self.compute_critic_loss(
-                    reward,
-                    ~terminated[1],
-                    current_actor,
-                    q_agents,
-                    target_q_agents,
-                    rb_workspace,
-                    ent_coef,
-                )
+                    (critic_loss_1, critic_loss_2) = self.compute_critic_loss(
+                        reward,
+                        ~terminated[1],
+                        current_actor,
+                        q_agents,
+                        target_q_agents,
+                        rb_workspace,
+                        ent_coef,
+                    )
 
-                bbrl_logger.add_log("critic_loss_1", critic_loss_1, nb_steps)
-                bbrl_logger.add_log("critic_loss_2", critic_loss_2, nb_steps)
-                critic_loss = critic_loss_1 + critic_loss_2
-                critic_loss.backward()
-                torch.nn.utils.clip_grad_norm_(
-                    critic_1.parameters(), self.cfg.algorithm.max_grad_norm
-                )
-                torch.nn.utils.clip_grad_norm_(
-                    critic_2.parameters(), self.cfg.algorithm.max_grad_norm
-                )
-                critic_optimizer.step()
+                    bbrl_logger.add_log("critic_loss_1", critic_loss_1, nb_steps)
+                    bbrl_logger.add_log("critic_loss_2", critic_loss_2, nb_steps)
+                    critic_loss = critic_loss_1 + critic_loss_2
+                    critic_loss.backward()
+                    torch.nn.utils.clip_grad_norm_(
+                        critic_1.parameters(), self.cfg.algorithm.max_grad_norm
+                    )
+                    torch.nn.utils.clip_grad_norm_(
+                        critic_2.parameters(), self.cfg.algorithm.max_grad_norm
+                    )
+                    critic_optimizer.step()
 
-                # Actor update
-                actor_optimizer.zero_grad()
-                actor_loss = self.compute_actor_loss(
-                    ent_coef, current_actor, q_agents, rb_workspace, bbrl_logger, nb_steps
-                )
-                bbrl_logger.add_log("actor_loss", actor_loss, nb_steps)
-                actor_loss.backward()
-                torch.nn.utils.clip_grad_norm_(
-                    actor.parameters(), self.cfg.algorithm.max_grad_norm
-                )
-                actor_optimizer.step()
+                    # Actor update
+                    if nb_steps % self.cfg.algorithm.policy_update_delay == 0:
+                        actor_optimizer.zero_grad()
+                        actor_loss = self.compute_actor_loss(
+                            ent_coef, current_actor, q_agents, rb_workspace, bbrl_logger, nb_steps
+                        )
+                        bbrl_logger.add_log("actor_loss", actor_loss, nb_steps)
+                        actor_loss.backward()
+                        torch.nn.utils.clip_grad_norm_(
+                            actor.parameters(), self.cfg.algorithm.max_grad_norm
+                        )
+                        actor_optimizer.step()
 
-                # Entropy coef update part
-                if entropy_coef_optimizer is not None:
-                    # See Eq. (17) of the SAC and Applications paper
-                    # log. probs have been computed when computing the actor loss
-                    action_logprobs_rb = rb_workspace["action_logprobs"].detach()
-                    entropy_coef_loss = -(
-                        log_entropy_coef.exp() * (action_logprobs_rb + target_entropy)
-                    ).mean()
-                    entropy_coef_optimizer.zero_grad()
-                    entropy_coef_loss.backward()
-                    entropy_coef_optimizer.step()
-                    bbrl_logger.add_log("entropy_coef_loss", entropy_coef_loss, nb_steps)
-                bbrl_logger.add_log("entropy_coef", ent_coef, nb_steps)
+                        # Entropy coef update part
+                        if entropy_coef_optimizer is not None:
+                            # See Eq. (17) of the SAC and Applications paper
+                            # log. probs have been computed when computing the actor loss
+                            action_logprobs_rb = rb_workspace["action_logprobs"].detach()
+                            entropy_coef_loss = -(
+                                log_entropy_coef.exp() * (action_logprobs_rb + target_entropy)
+                            ).mean()
+                            entropy_coef_optimizer.zero_grad()
+                            entropy_coef_loss.backward()
+                            entropy_coef_optimizer.step()
+                            bbrl_logger.add_log("entropy_coef_loss", entropy_coef_loss, nb_steps)
+                        bbrl_logger.add_log("entropy_coef", ent_coef, nb_steps)
 
-                # Soft update of target q function
-                soft_update_params(critic_1, target_critic_1, tau)
-                soft_update_params(critic_2, target_critic_2, tau)
-                # soft_update_params(actor, target_actor, tau)
+                    # Soft update of target q function
+                    if nb_steps % self.cfg.algorithm.target_update_delay == 0:
+                        soft_update_params(critic_1, target_critic_1, tau)
+                        soft_update_params(critic_2, target_critic_2, tau)
+                    # soft_update_params(actor, target_actor, tau)
                 n_epochs += 1
 
 
