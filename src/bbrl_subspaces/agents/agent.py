@@ -444,10 +444,18 @@ class IntuitiveSubspaceAction(SubspaceAgent):
                 action = torch.rand(x.shape[0], self.output_dimension)*2 - 1
             else:
                 # In SAC, predict_proba is used conversely with stochastic
-                xs = [anchor.forward(x, t, stochastic=predict_proba) for anchor in self.anchors]
-                xs = torch.stack(xs, dim=-1)
-                alpha = torch.stack([alphas] * self.n_anchors, dim=-2)
-                action = (xs * alpha).sum(-1)
+                actions = []
+                log_probs = []
+                for anchor in self.anchors:
+                    action, log_prob = anchor.forward(x, t, stochastic=predict_proba)
+                    actions.append(action)
+                    log_probs.append(log_prob)
+                actions = torch.stack(actions, dim=-1)
+                log_probs = torch.stack(log_probs, dim=-1)
+                alpha = torch.stack([alphas], dim=-2)
+                action = (actions * alpha).sum(-1)
+                log_prob = (log_probs * alpha).sum(-1)
+                self.set("action_logprobs", log_prob)
             self.set(("action", t), action)
             self.counter += 1
 
@@ -492,7 +500,7 @@ class IntuitiveSubspaceAction(SubspaceAgent):
     def euclidean_distances(self, **kwargs):
         euclidean_distances = {}
         for i in range(self.n_anchors):
-            for j in range(i+1, sactionelf.n_anchors):
+            for j in range(i+1, self.n_anchors):
                 policy_i = torch.nn.utils.parameters_to_vector(self.anchors[i].parameters())
                 policy_j = torch.nn.utils.parameters_to_vector(self.anchors[j].parameters())
                 euclidean_distances[f"π{i+1}, π{j+1}"] = torch.norm(policy_i - policy_j, p=2)
@@ -534,4 +542,4 @@ class SubspaceSquashedGaussianActor(SquashedGaussianActor):
         log_prob = action_dist.log_prob(action)
         # This line allows to deepcopy the actor...
         self.tanh_transform._cached_x_y = [None, None]
-        return action
+        return action, log_prob
