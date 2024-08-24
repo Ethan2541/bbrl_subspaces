@@ -67,6 +67,9 @@ class SubspaceVisualizer:
         message_steps_str = f" at step {n_steps:,d}" if n_steps is not None else ""
         logger.message(f"Preparing to plot the subspace" + message_steps_str)
 
+        info["anchors_similarities"] = eval_agent.agent.agents[1].get_similarities()
+        info["subspace_area"] = eval_agent.agent.agents[1].subspace_area()
+
         # Compute alphas and rewards
         points_left = generate_left_edge_points(self.num_points)
         points_lower = generate_lower_edge_points(self.num_points)

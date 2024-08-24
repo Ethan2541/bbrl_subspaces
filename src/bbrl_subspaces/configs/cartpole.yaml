@@ -11,7 +11,7 @@ scenario:
       classname: bbrl_subspaces.frameworks.GymScenario
       domain: CartPoleContinuousSubspace-v1
       repeat_scenario: 1
-      tasks: ["normal"]
+      tasks: ["hugecart", "moon", "hugecart_moon"]
       base_env:
             env_name: ${scenario.domain}
             n_envs: 8
@@ -39,12 +39,12 @@ framework:
                               torch: 789
                         nb_seeds: 1
                         n_steps_train: 32
-                        n_steps: 1_000_000
+                        n_steps: 10_000
                         max_grad_norm: 0.5
                         buffer_size: 1e6
                         batch_size: 256
                         eval_interval: 2_000
-                        learning_starts: 10_000
+                        learning_starts: 300_000
                         tau_target: 0.05
                         discount_factor: 0.98
                         entropy_mode: "auto" # "auto" or "fixed"
@@ -53,7 +53,7 @@ framework:
                         n_samples: ${scenario.base_env.nb_evals}
                         n_estimations: ${framework.alpha_search.n_samples}
                         anticollapse_coef: 1.0
-                        n_policies: 1
+                        n_policies: 16
                         policy_update_delay: 1
                         target_update_delay: 1
 
@@ -94,7 +94,7 @@ framework:
             n_samples: 1024
             n_validation_steps: 500
             seed: 0
-            prune_subspace: False
+            prune_subspace: True
 
       evaluation:
             n_rollouts: 1
@@ -107,6 +107,6 @@ framework:
             num_points: 40
             interactive: False
             visualize_reward_curves: True
-            visualize_subspace: False
+            visualize_subspace: True
             reward_curves_thresholds: []
             subspace_thresholds: []

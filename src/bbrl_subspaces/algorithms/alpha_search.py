@@ -76,6 +76,7 @@ class AlphaSearch:
             
 
             # Estimate best alphas in the former subspace using n_samples sampled policies
+            # In monotask scenarios, the former subspace is the same as the current one
             alphas = Dirichlet(torch.ones(former_n_anchors)).sample(torch.Size([n_samples]))
             
             # Zero padding to match the size of the current subspace
@@ -140,7 +141,7 @@ class AlphaSearch:
                 info["best_alpha_reward"] = best_reward_before_training
                 logger.message("Best reward is with the former subspace: " + str(round(best_reward_before_training, 2)))
                 
-                if self.prune_subspace:
+                if self.prune_subspace and (not self.is_initial_task):
                     logger.message("Pruning the subspace")
                     action_agent.remove_anchor(logger=logger)
 

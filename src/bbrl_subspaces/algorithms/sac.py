@@ -410,8 +410,6 @@ class SAC:
         logger.message("Training ended")
         logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")
 
-        info["anchors_similarities"] = current_actor.agent.get_similarities()
-        info["subspace_area"] = current_actor.agent.subspace_area()
         info["replay_buffer"] = rb
         r = {"n_epochs": n_epochs, "training_time": time.time() - _training_start_time}
     
