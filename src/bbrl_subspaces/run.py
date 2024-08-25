@@ -5,10 +5,6 @@ import hydra
 import time
 
 from bbrl import instantiate_class
-from bbrl.agents import Agents, TemporalAgent
-
-from bbrl_subspaces.agents.utils import get_env_agents
-
 
 
 @hydra.main(

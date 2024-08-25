@@ -1,3 +1,4 @@
+import copy
 import typing as tp
 
 from omegaconf import open_dict
@@ -15,8 +16,8 @@ class GymScenario(Scenario):
         for k, task in enumerate(tasks):
             with open_dict(base_env):
                 base_env["kwargs"] = self.get_environment_configuration_from_task(domain, task)
-            self._train_tasks.append(Task(base_env, k))
-            self._test_tasks.append(Task(base_env, k))
+            self._train_tasks.append(Task(copy.deepcopy(base_env), k))
+            self._test_tasks.append(Task(copy.deepcopy(base_env), k))
 
 
     def get_environment_configuration_from_task(self, domain, task):

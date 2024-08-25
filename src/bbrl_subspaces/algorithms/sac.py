@@ -398,8 +398,6 @@ class SAC:
                     )
 
                 if visualizer is not None:
-                    info["anchors_similarities"] = current_actor.agent.get_similarities()
-                    info["subspace_area"] = current_actor.agent.subspace_area()
                     visualizer.plot_subspace(
                         TemporalAgent(Agents(copy.deepcopy(eval_env_agent), copy.deepcopy(actor))), logger, info, nb_steps
                     )

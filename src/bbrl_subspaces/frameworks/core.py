@@ -105,7 +105,7 @@ class Framework:
         return self._stage
 
 
-    def train(self,task: Task,logger: tp.Any, **kwargs) -> None:
+    def train(self, task:Task, logger:tp.Any, **kwargs) -> None:
         """ Update a model over a particular task.
         Parameters
         ----------
