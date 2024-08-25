@@ -8,7 +8,7 @@ This page is the main entry point to the BBRL Subspaces documentation. We expand
 
 ### Scenario
 
-A scenario is a succession of tasks that all take place in the same [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) environment. The goal is to train the subspace to adapt to different configurations. As such, two different tasks shoud have different environment parameters. Monotask scenarios are scenarios that only have one task, as opposed to multitask scenarios.
+A scenario is a succession of tasks that all take place in the same [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) environment. The goal is to train the subspace to adapt to different configurations. As such, two different tasks should have different environment parameters. Monotask scenarios are scenarios that only have one task, as opposed to multitask scenarios.
 
 Let's consider the [HalfCheetah](https://gymnasium.farama.org/environments/mujoco/half_cheetah/) environment where a 2-dimensional robot has to learn how to run forward. We define the following tasks:
 

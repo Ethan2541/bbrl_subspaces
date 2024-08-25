@@ -24,10 +24,10 @@ def remove_anchor(model):
 
 
 class AlphaSearch:
-    def __init__(self, n_rollouts, n_samples, n_validation_steps, seed, prune_subspace=True, is_initial_task=True):
+    def __init__(self, n_estimations, n_rollouts, n_validation_steps, seed, prune_subspace=True, is_initial_task=True):
         self.is_initial_task = is_initial_task
+        self.n_estimations = n_estimations
         self.n_rollouts = n_rollouts
-        self.n_samples = n_samples
         self.n_validation_steps = n_validation_steps
         self.prune_subspace = prune_subspace    # If False, the anchors are always kept in the subspace
         self.seed = seed
@@ -47,18 +47,18 @@ class AlphaSearch:
         if n_anchors > 1:
             replay_buffer = info["replay_buffer"]
             n_rollouts = self.n_rollouts
-            n_samples = self.n_samples
+            n_estimations = self.n_estimations
             n_steps = self.n_validation_steps
 
-            # Estimate best alphas in the current subspace using n_samples sampled policies
-            alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([n_samples]))
+            # Estimate best alphas in the current subspace using n_estimations sampled policies
+            alphas = Dirichlet(torch.ones(n_anchors)).sample(torch.Size([n_estimations]))
             alphas = torch.stack([alphas for _ in range(2)], dim=0)
             values = []
 
-            # Get a list of n_samples elements, which are Q-values tensors of size n_rollouts
+            # Get a list of n_estimations elements, which are Q-values tensors of size n_rollouts
             logger.message("Starting value estimation in the current subspace")
             _training_start_time = time.time()
-            for _ in range(self.n_samples):
+            for _ in range(self.n_estimations):
                 replay_workspace = replay_buffer.get_shuffled(alphas.shape[1])
                 replay_workspace.set_full("alphas", alphas)
                 with torch.no_grad():
@@ -75,9 +75,9 @@ class AlphaSearch:
             logger.message("Time elapsed: " + str(round(time.time() - _training_start_time, 0)) + " sec")
             
 
-            # Estimate best alphas in the former subspace using n_samples sampled policies
+            # Estimate best alphas in the former subspace using n_estimations sampled policies
             # In monotask scenarios, the former subspace is the same as the current one
-            alphas = Dirichlet(torch.ones(former_n_anchors)).sample(torch.Size([n_samples]))
+            alphas = Dirichlet(torch.ones(former_n_anchors)).sample(torch.Size([n_estimations]))
             
             # Zero padding to match the size of the current subspace
             if not self.is_initial_task:
@@ -86,10 +86,10 @@ class AlphaSearch:
             alphas = torch.stack([alphas for _ in range(2)], dim=0)
             values = []
             
-            # Get a list of n_samples elements, which are Q-values tensors of size n_rollouts
+            # Get a list of n_estimations elements, which are Q-values tensors of size n_rollouts
             logger.message("Starting value estimation in the former subspace")
             _training_start_time = time.time()
-            for _ in range(self.n_samples):
+            for _ in range(self.n_estimations):
                 replay_workspace = replay_buffer.get_shuffled(alphas.shape[1])
                 replay_workspace.set_full("alphas", alphas)
                 with torch.no_grad():

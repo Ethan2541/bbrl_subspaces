@@ -277,7 +277,7 @@ class SAC:
 
             if nb_steps > self.cfg.algorithm.learning_starts:
                 # Sample a given number of policies from the subspace
-                for _ in range(self.cfg.algorithm.n_policies):
+                for _ in range(self.cfg.algorithm.n_sampled_actions):
                     # Get a sample from the workspace
                     rb_workspace = rb.get_shuffled(self.cfg.algorithm.batch_size)
 
@@ -346,7 +346,7 @@ class SAC:
 
 
             # Evaluating the average subspace reward
-            if nb_steps - tmp_steps_avg_reward > self.cfg.algorithm.avg_reward_interval:
+            if nb_steps - tmp_steps_avg_reward > self.cfg.algorithm.subspace_rewards_interval:
                 tmp_steps_avg_reward = nb_steps
                 n_anchors = eval_agent.agent.agents[1][0].n_anchors
                 eval_workspace = Workspace()
