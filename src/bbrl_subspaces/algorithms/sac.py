@@ -398,11 +398,11 @@ class SAC:
                     )
 
                 if visualizer is not None:
-                    visualizer.plot_subspace(
-                        TemporalAgent(Agents(copy.deepcopy(eval_env_agent), copy.deepcopy(actor))), logger, info, nb_steps
-                    )
                     visualizer.plot_reward_curves(
                         logger, self.cfg.algorithm.anticollapse_coef, self.cfg.algorithm.n_samples, n_steps_average_rewards, average_subspace_rewards, max_subspace_rewards, subspace_areas, step=nb_steps
+                    )
+                    visualizer.plot_subspace(
+                        TemporalAgent(Agents(copy.deepcopy(eval_env_agent), copy.deepcopy(actor))), logger, info, nb_steps
                     )
 
         logger.message("Training ended")

@@ -11,7 +11,7 @@ scenario:
       classname: bbrl_subspaces.frameworks.GymScenario
       domain: CartPoleContinuousSubspace-v1
       repeat_scenario: 1
-      tasks: ["normal", "normal", "normal"]
+      tasks: ["normal"]
       base_env:
             env_name: ${scenario.domain}
             n_envs: 8
@@ -39,7 +39,7 @@ framework:
                               torch: 789
                         nb_seeds: 1
                         n_steps_train: 32
-                        n_steps: 300_000
+                        n_steps: 1_000_000
                         max_grad_norm: 0.5
                         buffer_size: 1e6
                         batch_size: 256
@@ -53,7 +53,7 @@ framework:
                         n_samples: ${scenario.base_env.nb_evals}
                         n_estimations: ${framework.alpha_search.n_estimations}
                         anticollapse_coef: 1.0
-                        n_sampled_actions: 16
+                        n_sampled_actions: 1
                         policy_update_delay: 1
                         target_update_delay: 1
 
