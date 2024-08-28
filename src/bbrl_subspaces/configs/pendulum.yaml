@@ -41,7 +41,6 @@ framework:
                         n_steps_train: 32
                         n_steps: 1_000_000
                         eval_interval: 5000
-                        nb_evals: 10
                         buffer_size: 1e6
                         batch_size: 256
                         learning_starts: 10_000
