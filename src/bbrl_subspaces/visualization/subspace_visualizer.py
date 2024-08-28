@@ -208,7 +208,7 @@ class SubspaceVisualizer:
         date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
 
         save_path_steps_str = f"_step_{n_steps:,d}" if n_steps is not None else ""
-        save_path = os.path.join(self.subspace_output_path, f"{self.env_name}_{self.algorithm_name}_Subspace_Rewards_{date_time}" + save_path_steps_str + ".png")
+        save_path = os.path.join(self.subspace_output_path, f"{self.env_name}_{self.algorithm_name}_Subspace_Rewards_{date_time}" + save_path_steps_str + ".pdf")
         plt.savefig(save_path)
 
         logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
@@ -338,7 +338,7 @@ class SubspaceVisualizer:
         logger.message(f"Saving the reward curves figure")
         _plotting_start_time = time.time()
         
-        fig = plt.figure(figsize=(10, 5))
+        plt.figure(figsize=(7, 4))
         plt.plot(n_steps_average_rewards, average_subspace_rewards, c="blue", label="Average subspace reward", linewidth=0.75, zorder=1)
         plt.scatter(n_steps_average_rewards, average_subspace_rewards, c=subspace_areas, cmap="viridis", s=20, zorder=2)
         plt.plot(n_steps_average_rewards, max_subspace_rewards, c="red", linestyle="dashed", marker="o", markersize=4, label="Maximum subspace reward", linewidth=0.75, zorder=1)
@@ -346,14 +346,15 @@ class SubspaceVisualizer:
         cbar.set_label("Subspace Area", rotation=270, labelpad=15)
         plt.xlabel("Number of steps")
         plt.ylabel("Reward")
-        plt.title(f"Subspace reward over time ({n_samples} samples, anticollapse coefficient = {anticollapse_coefficient})")
+        plt.title(f"Subspace rewards over time ({n_samples} samples, β = {anticollapse_coefficient})")
         plt.legend()
+        plt.tight_layout()
 
         now = datetime.now()
         date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
 
         save_path_steps_str = f"_step_{step:,d}" if step is not None else ""
-        save_path = os.path.join(self.reward_curves_output_path, f"{self.env_name}_{self.algorithm_name}_Reward_Curves_{date_time}" + save_path_steps_str + ".png")
+        save_path = os.path.join(self.reward_curves_output_path, f"{self.env_name}_{self.algorithm_name}_Reward_Curves_{date_time}" + save_path_steps_str + ".pdf")
         plt.savefig(save_path)
 
         logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
