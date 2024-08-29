@@ -189,9 +189,11 @@ class SubspaceVisualizer:
             best_point = get_point_from_alphas(np.array(best_alpha.tolist()).reshape(1, -1), triangle_vertices)
             plt.scatter(best_point[0], best_point[1], c="yellow", marker="*", edgecolors="black", linewidths=0.5, s=150, label=f"Best estimated policy (reward = {info['best_alpha_reward']:.2f})")
 
-        # Set axis limits and labels
+        # Set axis limits and remove ticks
         plt.xlim(-0.1, 1.1)
         plt.ylim(-0.1, 1.05)
+        plt.xticks([])
+        plt.yticks([])
 
         # Add color bar legend
         cbar = plt.colorbar(cm.ScalarMappable(cmap=cmap, norm=norm), ax=plt.gca())
@@ -209,7 +211,7 @@ class SubspaceVisualizer:
 
         save_path_steps_str = f"_step_{n_steps:,d}" if n_steps is not None else ""
         save_path = os.path.join(self.subspace_output_path, f"{self.env_name}_{self.algorithm_name}_Subspace_Rewards_{date_time}" + save_path_steps_str + ".pdf")
-        plt.savefig(save_path)
+        plt.savefig(save_path, bbox_inches="tight", pad_inches=0.2)
 
         logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
 
@@ -348,14 +350,13 @@ class SubspaceVisualizer:
         plt.ylabel("Reward")
         plt.title(f"Subspace rewards over time ({n_samples} samples, β = {anticollapse_coefficient})")
         plt.legend()
-        plt.tight_layout()
 
         now = datetime.now()
         date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
 
         save_path_steps_str = f"_step_{step:,d}" if step is not None else ""
         save_path = os.path.join(self.reward_curves_output_path, f"{self.env_name}_{self.algorithm_name}_Reward_Curves_{date_time}" + save_path_steps_str + ".pdf")
-        plt.savefig(save_path)
+        plt.savefig(save_path, bbox_inches="tight")
 
         logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
 
