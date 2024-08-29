@@ -128,12 +128,12 @@ class SubspaceVisualizer:
             info["best_alpha"] = best_alpha
             info["best_alpha_reward"] = max_reward
 
-        logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
-
         # Plot the triangle with the points
         if self.is_interactive:
             self.plot_interactive_triangle_with_multiple_points(alpha_reward_list, logger, info=info, n_steps=n_steps)
         self.plot_triangle_with_multiple_points(alpha_reward_list, logger, info=info, n_steps=n_steps)
+
+        logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
 
 
 
@@ -146,7 +146,6 @@ class SubspaceVisualizer:
         - rewards_list (list of float): List of reward values for each point.
         """
         logger.message(f"Saving the subspace rewards figure")
-        _plotting_start_time = time.time()
 
         # Plot the vertices of the equilateral triangle
         triangle_vertices = np.array([[0, 0], [1, 0], [0.5, np.sqrt(3)/2]])
@@ -213,8 +212,6 @@ class SubspaceVisualizer:
         save_path = os.path.join(self.subspace_output_path, f"{self.env_name}_{self.algorithm_name}_Subspace_Rewards_{date_time}" + save_path_steps_str + ".pdf")
         plt.savefig(save_path, bbox_inches="tight", pad_inches=0.2)
 
-        logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
-
 
     def plot_interactive_triangle_with_multiple_points(self, alpha_reward_list, logger, info={}, **kwargs):
         """
@@ -226,7 +223,6 @@ class SubspaceVisualizer:
         - rewards_list (list of torch.Tensor): List of reward tensors for each point.
         """
         logger.message(f"Plotting the interactive figure of the subspace rewards")
-        _plotting_start_time = time.time()
         
         # Generate the vertices of the equilateral triangle
         triangle_vertices = np.array([[0, 0], [1, 0], [0.5, np.sqrt(3)/2]])
@@ -320,8 +316,6 @@ class SubspaceVisualizer:
             plot_bgcolor="white",
             showlegend=True
         )
-
-        logger.message("Time elapsed: " + str(round(time.time() - _plotting_start_time, 0)) + " sec")
 
         fig = go.Figure(data=[policy_vertices] + new_points, layout=layout)
         fig.show()
