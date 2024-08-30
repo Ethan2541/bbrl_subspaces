@@ -13,13 +13,9 @@ In order to leverage traditional training methods, we thus first sample $n_{anch
 
 The weights are resampled when an episode is over, or every `repeat_alpha` timesteps. The weights can also be changed only when the current cumulated rewards are not satisfying enough compared to the top K rewards of the replay buffer, where K depends on the `refresh_rate` and `buffer_size` hyperparameters.
 
-The training phase subsequently frequently updates the parameters of the free anchors (as opposed to the frozen ones), which also updates the current sampled policy as seen in Figure 1. It is important to note that if `resampling_policy = True`, then a new policy is sampled specifically for the anchors' updates.
+The training phase subsequently frequently updates the parameters of the free anchors (as opposed to the frozen ones), which also updates the current sampled policy as seen in Figure 1. Regarding the use of the actor and critic losses, they are actually almost identical to a regular training process. The only difference is that the actor loss leverages an anticollapse term.
 
-![Subspace of Policies](assets/subspace_of_policies_training.jpg)
-
-**Figure 1.** *Policy update of the whole subspace*
-
-Regarding the use of the actor and critic losses, they are actually almost identical to a regular training process. The only difference is that the actor loss leverages an anticollapse term.
+One should bear in mind that the most important hyperparameters in subspace training are the number of sampled trajectories `n_samples` denoted $B$, and the number of sampled actions per epoch `n_sampled_actions` noted $K$. Increasing either results in better policies estimations and improved subspace performance on average.
 
 
 ## Preventing the subspace from collapsing
@@ -41,7 +37,7 @@ In order to evaluate a subspace, it is fundamental to consider how we can find t
 
 The most straightforward method to estimate the best policy of the subspace, is to sample $n_{samples}$ policies (derived from a sampled Dirichlet distribution) and evaluate all of them over an episode, for ranking purposes. As it can be a very long process, we only limit the evaluation environment's rollout to a few steps called validation steps.
 
-A shortcut could be to use the critic's Q values. Given some sampled policies, we estimate a $n\_{samples}$ Q-values with the critic. The sampled policy with the largest Q-values in average is then taken as the best policy of the subspace for the current task.
+A shortcut could be to use the critic's Q values. Given some sampled policies, we estimate a $n\_{samples}$ Q-values with the critic. The sampled policy with the largest Q-values on average is then taken as the best policy of the subspace for the current task.
 
 
 ## Multitask Scenarios

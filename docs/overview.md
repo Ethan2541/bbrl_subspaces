@@ -38,7 +38,7 @@ A possible scenario using these task is `Normal -> Hugefoot -> Moon -> Rainfall`
 
 ### Subspace of Policies
 
-A $n$-dimensional subspace of policies is defined as a convex hull delimited by $n$ different policies called **anchors**. Following this definition, a policy from the subspace is a linear combination of these anchors weighted by a sampled **Dirichlet distributions**. Hence, a subspace actually represents an infinity of policies. Compared to single policy training where we aim to get the most optimal results with the policy, subspace training strives to get the largest subspace (i.e. the anchors' parameters should be as pairwise different as possible) with almost only well-performing policies.
+A $n$-dimensional subspace of policies is defined as a convex hull delimited by $n$ different policies called **anchors**. Following this definition, a policy from the subspace is a linear combination of these anchors weighted by a sampled **Dirichlet distributions**. Hence, a subspace actually represents an infinity of policies. Compared to single policy training where we aim to get the most optimal results with the policy, subspace training strives to get the largest subspace (i.e. the anchors' parameters should be as pairwise different as possible) with as many viable policies as possible.
 
 **NB:** a subspace of policies with 2 anchors is called a **Line of Policies**.
 

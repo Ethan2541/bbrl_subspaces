@@ -6,13 +6,13 @@ The first kind of figures that is plotted during an execution is the reward curv
 
 ![CartPole Reward Curves for 500 samples](assets/cartpole_reward_curves_1.png)
 
-**Figure 1.a.** *CartPole Reward Curves for 500 samples*
+**Figure 1.a.** CartPole Reward Curves for 500 samples
 
 <hr>
 
 ![Pendulum Reward Curves for 500 samples](assets/pendulum_reward_curves_1.png)
 
-**Figure 1.b.** *Pendulum Reward Curves for 500 samples*
+**Figure 1.b.** Pendulum Reward Curves for 500 samples
 
 
 ## Subspaces with 3 anchors
@@ -25,12 +25,12 @@ Finally, it is also possible to get an interactive view of the subspace with `Pl
 
 ![CartPole Subspace after 1.000.000 steps](assets/cartpole_subspace.png)
 
-**Figure 2.b.** *CartPole Subspace after 1.000.000 steps*
+**Figure 2.b.** CartPole Subspace after 1.000.000 steps $\left(\beta = 0.001, B = 500, K = 1\right)$
 
 <hr>
 
 ![Pendulum Subspace after 1.000.000 steps](assets/pendulum_subspace.png)
 
-**Figure 2.b.** *Pendulum Subspace after 1.000.000 steps*
+**Figure 2.b.** Pendulum Subspace after 1.000.000 steps $\left(\beta = 0.001, B = 500, K = 1\right)$
 
 **NB:** in the case of the CartPole environment, the heatmap colorbar is fixed because the rewards are necessarily between 0 and 500. This makes easier the comparison of different subspace visualizations.
